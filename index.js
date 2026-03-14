@@ -1,7 +1,7 @@
 import { extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced, eventSource, event_types } from "../../../../script.js";
 
-const extensionName = "chat-organizer";
+const extensionName = "ST-Chat-Organizer";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 const defaultSettings = {
