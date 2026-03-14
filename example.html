@@ -1,0 +1,64 @@
+<div class="chat-organizer-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>📁 Chat Organizer</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+
+            <div style="margin-bottom: 8px;">
+                <input id="co_enabled" type="checkbox" />
+                <label for="co_enabled">Включить Chat Organizer</label>
+            </div>
+
+            <div style="height: 1px; background: var(--SmartThemeBorderColor); opacity: 0.4; margin: 8px 0;"></div>
+
+            <div style="margin-bottom: 6px;">
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85em; opacity: 0.8;">🎨 Цвет границ папок</label>
+                <input id="co_border_color" type="color" value="#444444" style="width: 48px; height: 28px; cursor: pointer; border: none; background: none;" />
+                <small style="opacity: 0.6; margin-left: 6px;">обводка и разделители</small>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85em; opacity: 0.8;">🗂 Фон папки</label>
+                <input id="co_folder_bg" type="color" value="#111111" style="width: 48px; height: 28px; cursor: pointer; border: none; background: none;" />
+                <small style="opacity: 0.6; margin-left: 6px;">фоновый цвет карточки (базовый)</small>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85em; opacity: 0.8;">🗂 Прозрачность фона папок</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input id="co_bg_opacity" type="range" min="0" max="100" value="5" style="flex: 1; cursor: pointer;" />
+                    <span id="co_bg_opacity_val" style="font-size: 0.85em; opacity: 0.7; min-width: 32px;">5%</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 6px;">
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85em; opacity: 0.8;">✨ Цвет при наведении</label>
+                <input id="co_accent_color" type="color" value="#222222" style="width: 48px; height: 28px; cursor: pointer; border: none; background: none;" />
+                <small style="opacity: 0.6; margin-left: 6px;">hover эффект</small>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85em; opacity: 0.8;">📝 Цвет текста заметок</label>
+                <input id="co_note_color" type="color" value="#f0c060" style="width: 48px; height: 28px; cursor: pointer; border: none; background: none;" />
+                <small style="opacity: 0.6; margin-left: 6px;">цвет тегов, пинов и заметок</small>
+            </div>
+
+            <div style="height: 1px; background: var(--SmartThemeBorderColor); opacity: 0.4; margin: 8px 0;"></div>
+
+            <div>
+                <input id="co_refresh" class="menu_button" type="submit" value="🔄 Обновить папки" />
+            </div>
+
+            <div style="height: 1px; background: var(--SmartThemeBorderColor); opacity: 0.4; margin: 8px 0;"></div>
+            <div style="margin-bottom: 6px; font-size: 0.85em; opacity: 0.8;">💾 Резервное копирование:</div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input id="co_export" class="menu_button" type="button" value="Экспорт" style="flex: 1;" />
+                <label for="co_import_file" class="menu_button" style="flex: 1; cursor: pointer; text-align: center; margin: 0; line-height: 28px;">Импорт</label>
+                <input id="co_import_file" type="file" accept=".json" style="display: none;" />
+            </div>
+
+        </div>
+    </div>
+</div>
