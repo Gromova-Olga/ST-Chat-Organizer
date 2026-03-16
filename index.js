@@ -189,7 +189,7 @@ function setupImportExport() {
     });
 }
 
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ НАБЛЮДАТЕЛЯ
+// === НАБЛЮДАТЕЛЬ (ЧТОБЫ ЧАТЫ НЕ ПРОПАДАЛИ ПРИ УДАЛЕНИИ) ===
 let isBuilding = false;
 let rebuildTimeout;
 
@@ -199,13 +199,12 @@ function scheduleRebuild(delay = 100) {
     rebuildTimeout = setTimeout(buildFolderUI, delay);
 }
 
-// НАБЛЮДАТЕЛЬ ЗА ТАВЕРНОЙ (Ловит перерисовку чатов)
 const chatObserver = new MutationObserver((mutations) => {
     if (!extension_settings[extensionName]?.enabled || isBuilding) return;
     let triggered = false;
     for (let m of mutations) {
         for (let node of m.addedNodes) {
-            if (node.nodeType === 1) { // Если это HTML элемент
+            if (node.nodeType === 1) { 
                 if (node.classList.contains('recentChat') || 
                     node.classList.contains('recentChatList') || 
                     (node.querySelector && node.querySelector('.recentChat'))) {
@@ -216,13 +215,10 @@ const chatObserver = new MutationObserver((mutations) => {
         }
         if (triggered) break;
     }
-    if (triggered) {
-        scheduleRebuild(200); // Ждем 200мс, чтобы Таверна закончила всё рисовать
-    }
+    if (triggered) scheduleRebuild(200); 
 });
 
 function removeFolderUI() {
-    // Собираем свежие чаты, которые Таверна только что создала
     const existingFiles = new Set();
     $(".recentChatList .recentChat").each(function() {
         const file = $(this).attr("data-file");
@@ -231,13 +227,11 @@ function removeFolderUI() {
 
     $("#co-folder-view .recentChat").each(function() {
         const file = $(this).attr("data-file");
-        // Если Таверна уже нарисовала свежую копию этого чата - старую просто уничтожаем, чтобы не было дублей
         if (file && existingFiles.has(file)) {
             $(this).remove(); 
         } else {
-            // Иначе возвращаем чат обратно в список
             $(this).detach().appendTo(".recentChatList");
-            $(this).find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-msg-count").remove();
+            $(this).find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline").remove();
         }
     });
     $("#co-folder-view").remove();
@@ -245,7 +239,7 @@ function removeFolderUI() {
 }
 
 function buildFolderUI() {
-    if (isBuilding) return; // Защита от двойного запуска
+    if (isBuilding) return; 
     isBuilding = true;
     
     removeFolderUI();
@@ -352,20 +346,42 @@ function buildFolderUI() {
                     if (displayName !== chat.originalName) chat.element.find(".chatName span:last-child").text(displayName);
 
                     const $wrapper = $(`<div class="co-chat-wrapper" draggable="true" data-file="${chat.dataFile}"></div>`);
-                    
                     const $checkbox = $(`<input type="checkbox" class="co-bulk-checkbox" value="${chat.dataFile}" />`);
                     $wrapper.append($checkbox);
 
                     chat.element.detach().appendTo($wrapper);
-                    chat.element.find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-msg-count").remove();
+                    chat.element.find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline").remove();
 
-                    let msgCountStr = "";
-                    const titleAttr = chat.element.attr("title") || "";
-                    const titleMatch = titleAttr.match(/(\d+)/);
-                    if (titleMatch) msgCountStr = titleMatch[1];
-                    if (msgCountStr) {
-                        chat.element.find(".chatDate").append(`<span class="co-msg-count"><i class="fa-solid fa-message"></i> ${msgCountStr}</span>`);
+                    // === НОВЫЙ ПОИСК СТАТИСТИКИ ПО DOM (СПАСИБО СКРИНШОТУ) ===
+                    let msgCountStr = "?";
+                    let fileSizeStr = "";
+                    
+                    const $statsBlock = chat.element.find('.chatStats');
+                    if ($statsBlock.length > 0) {
+                        // Ищем по классам из версии 1.14.0
+                        msgCountStr = $statsBlock.find('.counterBlock small').text().trim() || "?";
+                        fileSizeStr = $statsBlock.find('.fileSize').text().trim() || "";
+                    } else {
+                        // Резервный метод на случай, если структура поменяется
+                        const fullText = chat.element.text() || "";
+                        const sizeMatch = fullText.match(/([\d.]+\s*[kKmMgG][bB])/i);
+                        if (sizeMatch) fileSizeStr = sizeMatch[1];
+
+                        const msgMatch = fullText.match(/(\d+)\s*(?:\||msgs|messages)/i);
+                        if (msgMatch) {
+                            msgCountStr = msgMatch[1];
+                        } else {
+                            const titleAttr = chat.element.attr("title") || "";
+                            const titleMatch = titleAttr.match(/(\d+)/);
+                            if (titleMatch) msgCountStr = titleMatch[1];
+                        }
                     }
+
+                    // Отрисовываем статистику
+                    const statsHtml = `<span class="co-msg-count" title="Сообщения"><i class="fa-solid fa-message"></i> ${msgCountStr}</span>` + 
+                                      (fileSizeStr ? `<span class="co-file-size" title="Размер"><i class="fa-solid fa-hard-drive"></i> ${fileSizeStr}</span>` : "");
+                    
+                    chat.element.find(".chatDate").append(`<div class="co-stats-inline">${statsHtml}</div>`);
 
                     const tagsArr = tagsStr.split(',').map(t => t.trim()).filter(t => t);
                     const tagsHtml = tagsArr.map(t => `<span class="co-tag">${t}</span>`).join('');
@@ -378,14 +394,15 @@ function buildFolderUI() {
                         <div class="co-action-panel">
                             <div class="co-action-btn co-btn-pin ${isPinned ? 'co-active-pin' : ''}" title="Закрепить"><i class="fa-solid fa-thumbtack"></i></div>
                             <div class="co-action-btn co-btn-tag" title="Теги"><i class="fa-solid fa-tags"></i></div>
-                            <div class="co-action-btn co-btn-rename" title="Переименовать"><i class="fa-solid fa-pen"></i></div>
+                            <div class="co-action-btn co-btn-rename" title="Визуальное имя (в папке)"><i class="fa-solid fa-pen"></i></div>
+                            <div class="co-action-btn co-btn-native-rename" title="Системное имя (переименовать файл)"><i class="fa-solid fa-file-signature"></i></div>
                             <div class="co-action-btn co-btn-note ${hasNote ? 'co-active-note' : ''}" title="Заметка"><i class="fa-solid ${hasNote ? 'fa-note-sticky' : 'fa-plus'}"></i></div>
                             <div class="co-action-btn co-btn-trash" title="Удалить чат"><i class="fa-solid fa-trash"></i></div>
                         </div>
                     `);
 
                     const $editTray = $(`<div class="co-edit-tray co-hidden"></div>`);
-                    const $renameArea = $(`<div class="co-edit-section co-hidden"><input type="text" class="co-rename-input" value="${displayName}" placeholder="Имя чата..." /></div>`);
+                    const $renameArea = $(`<div class="co-edit-section co-hidden"><input type="text" class="co-rename-input" value="${displayName}" placeholder="Визуальное имя чата..." /></div>`);
                     const $tagArea = $(`<div class="co-edit-section co-hidden"><input type="text" class="co-tag-input" value="${tagsStr}" placeholder="Теги (через запятую)..." /></div>`);
                     const $noteArea = $(`<div class="co-edit-section co-hidden"><textarea class="co-note-input" placeholder="Заметка...">${note}</textarea></div>`);
                     
@@ -399,12 +416,20 @@ function buildFolderUI() {
                         buildFolderUI(); 
                     });
 
-                    // Удаление - триггерит встроенный механизм Таверны
+                    // Надежный клик по оригинальным кнопкам Таверны
+                    $actionPanel.find(".co-btn-native-rename").on("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = chat.element.find('.chat_edit, .edit_chat, .ch_edit, [title="Edit chat name"], .chatActions .fa-pen-to-square').first();
+                        if (target.length) target.click();
+                        else toastr.error("Не удалось найти кнопку переименования", "Chat Organizer");
+                    });
+
                     $actionPanel.find(".co-btn-trash").on("click", (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const originalBtn = chat.element.find('.chatActions i.fa-trash').parent()[0] || chat.element.find('.delete_chat, .chat_delete, .ch_del')[0];
-                        if (originalBtn) originalBtn.click();
+                        const target = chat.element.find('.delete_chat, .chat_delete, .ch_del, [title="Delete chat"], .chatActions .fa-trash').first();
+                        if (target.length) target.click();
                         else toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
                     });
 
@@ -568,7 +593,6 @@ function buildFolderUI() {
             applyColors();
         }
         
-        // Снимаем блокировку, чтобы Наблюдатель снова мог реагировать на изменения
         setTimeout(() => { isBuilding = false; }, 100);
     };
 
@@ -597,14 +621,13 @@ jQuery(async () => {
         loadSettings();
         setupImportExport();
 
-        // Подключаем встроенные события Таверны
         if (eventSource && event_types?.CHAT_CHANGED) {
             eventSource.on(event_types.CHAT_CHANGED, () => {
                 scheduleRebuild(500);
             });
         }
         
-        // Запускаем Наблюдателя за панелью чатов
+        // Запускаем Наблюдателя, чтобы чаты не пропадали
         setTimeout(() => {
             const chatPanel = document.getElementById('rm_chats_tab') || document.body;
             chatObserver.observe(chatPanel, { childList: true, subtree: true });
