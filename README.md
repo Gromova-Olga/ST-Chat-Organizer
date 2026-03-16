@@ -3,9 +3,9 @@
 Ультимативный менеджер чатов для SillyTavern. Наведите идеальный порядок в ваших переписках: группируйте чаты по персонажам, добавляйте теги, заметки, кастомные имена и раскрашивайте папки!
 
 ## 📸 Интерфейс и Настройки
-![Меню настроек] <img width="475" height="520" alt="изображение" src="https://github.com/user-attachments/assets/14fd4c9e-3291-43cc-8dbb-f599babf6568" />
+Меню настроек <img width="475" height="520" alt="изображение" src="https://github.com/user-attachments/assets/14fd4c9e-3291-43cc-8dbb-f599babf6568" />
 
-![Интерфейс чатов] <img width="922" height="830" alt="Снимок экрана от 2026-03-16 23-22-25" src="https://github.com/user-attachments/assets/8ce2dffa-f47a-4a72-8ff4-c8a7d82ea750" />
+Интерфейс чатов <img width="922" height="830" alt="Снимок экрана от 2026-03-16 23-22-25" src="https://github.com/user-attachments/assets/8ce2dffa-f47a-4a72-8ff4-c8a7d82ea750" />
 
 
 ## ✨ Главные функции
