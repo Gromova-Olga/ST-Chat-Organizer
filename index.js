@@ -18,7 +18,7 @@ const defaultSettings = {
     customOrder: {},
     folderColors: {}, 
     folderSort: {},
-    chatImages: {} // Хранилище URL картинок
+    chatImages: {} // Добавили хранилище для обложек чатов!
 };
 
 function loadSettings() {
@@ -236,7 +236,6 @@ function removeFolderUI() {
             $(this).remove(); 
         } else {
             $(this).detach().appendTo(".recentChatList");
-            // Очищаем и новый класс картинки
             $(this).find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline, .co-chat-custom-image").remove();
         }
     });
@@ -359,7 +358,7 @@ function buildFolderUI() {
                     chat.element.detach().appendTo($wrapper);
                     chat.element.find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline, .co-chat-custom-image").remove();
 
-                    // Статистика
+                    // === СТАТИСТИКА ===
                     let msgCountStr = "?";
                     let fileSizeStr = "";
                     const $statsBlock = chat.element.find('.chatStats');
@@ -370,7 +369,6 @@ function buildFolderUI() {
                         const fullText = chat.element.text() || "";
                         const sizeMatch = fullText.match(/([\d.]+\s*[kKmMgG][bB])/i);
                         if (sizeMatch) fileSizeStr = sizeMatch[1];
-
                         const msgMatch = fullText.match(/(\d+)\s*(?:\||msgs|messages)/i);
                         if (msgMatch) {
                             msgCountStr = msgMatch[1];
@@ -390,19 +388,20 @@ function buildFolderUI() {
                     const $tagsPreview = $(`<div class="co-tags-preview">${tagsHtml}</div>`);
                     const $notePreview = $(`<div class="co-note-preview ${hasNote ? '' : 'co-hidden'}">${hasNote ? note : ''}</div>`);
                     
-                    // Блок с кастомной картинкой
+                    // Блок с картинкой
                     const $chatImage = $(`<img class="co-chat-custom-image ${chatImgUrl ? '' : 'co-hidden'}" src="${chatImgUrl}" />`);
-                    $chatImage.on("error", function() { $(this).addClass("co-hidden"); }); // Скрываем, если ссылка сломана
+                    $chatImage.on("error", function() { $(this).addClass("co-hidden"); });
 
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
                     chat.element.append($chatImage);
 
+                    // === ПАНЕЛЬ ИНСТРУМЕНТОВ (с кнопкой картинки) ===
                     const $actionPanel = $(`
                         <div class="co-action-panel">
                             <div class="co-action-btn co-btn-pin ${isPinned ? 'co-active-pin' : ''}" title="Закрепить"><i class="fa-solid fa-thumbtack"></i></div>
                             <div class="co-action-btn co-btn-tag" title="Теги"><i class="fa-solid fa-tags"></i></div>
                             <div class="co-action-btn co-btn-rename" title="Визуальное имя"><i class="fa-solid fa-pen"></i></div>
-                            <div class="co-action-btn co-btn-native-rename" title="Системное имя (переименовать файл)"><i class="fa-solid fa-file-signature"></i></div>
+                            <div class="co-action-btn co-btn-native-rename" title="Системное имя"><i class="fa-solid fa-file-signature"></i></div>
                             <div class="co-action-btn co-btn-image ${chatImgUrl ? 'co-active-note' : ''}" title="Обложка чата (URL)"><i class="fa-solid fa-image"></i></div>
                             <div class="co-action-btn co-btn-note ${hasNote ? 'co-active-note' : ''}" title="Заметка"><i class="fa-solid ${hasNote ? 'fa-note-sticky' : 'fa-plus'}"></i></div>
                             <div class="co-action-btn co-btn-trash" title="Удалить чат"><i class="fa-solid fa-trash"></i></div>
@@ -476,7 +475,7 @@ function buildFolderUI() {
                         if (e.type === "keydown") $editTray.addClass("co-hidden");
                     });
 
-                    // Сохранение и предпросмотр картинки
+                    // Сохранение картинки
                     $imageArea.find("input").on("blur keydown", function(e) {
                         if (e.type === "keydown" && e.key !== "Enter") return;
                         const val = $(this).val().trim();
