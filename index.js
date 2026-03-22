@@ -17,7 +17,8 @@ const defaultSettings = {
     tags: {},
     customOrder: {},
     folderColors: {}, 
-    folderSort: {}    
+    folderSort: {},
+    chatImages: {} // Хранилище URL картинок
 };
 
 function loadSettings() {
@@ -112,6 +113,11 @@ function saveCustomOrder(charName, order) {
     extension_settings[extensionName].customOrder[charName] = order;
     saveSettingsDebounced();
 }
+function saveChatImage(dataFile, url) {
+    if (!extension_settings[extensionName].chatImages) extension_settings[extensionName].chatImages = {};
+    extension_settings[extensionName].chatImages[dataFile] = url;
+    saveSettingsDebounced();
+}
 
 function getChatsGroupedByCharacter() {
     const chats = [];
@@ -189,7 +195,6 @@ function setupImportExport() {
     });
 }
 
-// === НАБЛЮДАТЕЛЬ (ЧТОБЫ ЧАТЫ НЕ ПРОПАДАЛИ ПРИ УДАЛЕНИИ) ===
 let isBuilding = false;
 let rebuildTimeout;
 
@@ -231,7 +236,8 @@ function removeFolderUI() {
             $(this).remove(); 
         } else {
             $(this).detach().appendTo(".recentChatList");
-            $(this).find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline").remove();
+            // Очищаем и новый класс картинки
+            $(this).find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline, .co-chat-custom-image").remove();
         }
     });
     $("#co-folder-view").remove();
@@ -341,6 +347,7 @@ function buildFolderUI() {
                     const hasNote = note.length > 0;
                     const isPinned = s.pinned?.[chat.dataFile];
                     const tagsStr = s.tags?.[chat.dataFile] || "";
+                    const chatImgUrl = s.chatImages?.[chat.dataFile] || ""; // Ссылка на картинку
                     
                     const displayName = s.chatNames?.[chat.dataFile] || chat.originalName;
                     if (displayName !== chat.originalName) chat.element.find(".chatName span:last-child").text(displayName);
@@ -350,19 +357,16 @@ function buildFolderUI() {
                     $wrapper.append($checkbox);
 
                     chat.element.detach().appendTo($wrapper);
-                    chat.element.find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline").remove();
+                    chat.element.find(".co-tags-preview, .co-note-preview, .co-action-panel, .co-stats-inline, .co-chat-custom-image").remove();
 
-                    // === НОВЫЙ ПОИСК СТАТИСТИКИ ПО DOM (СПАСИБО СКРИНШОТУ) ===
+                    // Статистика
                     let msgCountStr = "?";
                     let fileSizeStr = "";
-                    
                     const $statsBlock = chat.element.find('.chatStats');
                     if ($statsBlock.length > 0) {
-                        // Ищем по классам из версии 1.14.0
                         msgCountStr = $statsBlock.find('.counterBlock small').text().trim() || "?";
                         fileSizeStr = $statsBlock.find('.fileSize').text().trim() || "";
                     } else {
-                        // Резервный метод на случай, если структура поменяется
                         const fullText = chat.element.text() || "";
                         const sizeMatch = fullText.match(/([\d.]+\s*[kKmMgG][bB])/i);
                         if (sizeMatch) fileSizeStr = sizeMatch[1];
@@ -377,10 +381,8 @@ function buildFolderUI() {
                         }
                     }
 
-                    // Отрисовываем статистику
                     const statsHtml = `<span class="co-msg-count" title="Сообщения"><i class="fa-solid fa-message"></i> ${msgCountStr}</span>` + 
                                       (fileSizeStr ? `<span class="co-file-size" title="Размер"><i class="fa-solid fa-hard-drive"></i> ${fileSizeStr}</span>` : "");
-                    
                     chat.element.find(".chatDate").append(`<div class="co-stats-inline">${statsHtml}</div>`);
 
                     const tagsArr = tagsStr.split(',').map(t => t.trim()).filter(t => t);
@@ -388,14 +390,20 @@ function buildFolderUI() {
                     const $tagsPreview = $(`<div class="co-tags-preview">${tagsHtml}</div>`);
                     const $notePreview = $(`<div class="co-note-preview ${hasNote ? '' : 'co-hidden'}">${hasNote ? note : ''}</div>`);
                     
+                    // Блок с кастомной картинкой
+                    const $chatImage = $(`<img class="co-chat-custom-image ${chatImgUrl ? '' : 'co-hidden'}" src="${chatImgUrl}" />`);
+                    $chatImage.on("error", function() { $(this).addClass("co-hidden"); }); // Скрываем, если ссылка сломана
+
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
+                    chat.element.append($chatImage);
 
                     const $actionPanel = $(`
                         <div class="co-action-panel">
                             <div class="co-action-btn co-btn-pin ${isPinned ? 'co-active-pin' : ''}" title="Закрепить"><i class="fa-solid fa-thumbtack"></i></div>
                             <div class="co-action-btn co-btn-tag" title="Теги"><i class="fa-solid fa-tags"></i></div>
-                            <div class="co-action-btn co-btn-rename" title="Визуальное имя (в папке)"><i class="fa-solid fa-pen"></i></div>
+                            <div class="co-action-btn co-btn-rename" title="Визуальное имя"><i class="fa-solid fa-pen"></i></div>
                             <div class="co-action-btn co-btn-native-rename" title="Системное имя (переименовать файл)"><i class="fa-solid fa-file-signature"></i></div>
+                            <div class="co-action-btn co-btn-image ${chatImgUrl ? 'co-active-note' : ''}" title="Обложка чата (URL)"><i class="fa-solid fa-image"></i></div>
                             <div class="co-action-btn co-btn-note ${hasNote ? 'co-active-note' : ''}" title="Заметка"><i class="fa-solid ${hasNote ? 'fa-note-sticky' : 'fa-plus'}"></i></div>
                             <div class="co-action-btn co-btn-trash" title="Удалить чат"><i class="fa-solid fa-trash"></i></div>
                         </div>
@@ -404,9 +412,10 @@ function buildFolderUI() {
                     const $editTray = $(`<div class="co-edit-tray co-hidden"></div>`);
                     const $renameArea = $(`<div class="co-edit-section co-hidden"><input type="text" class="co-rename-input" value="${displayName}" placeholder="Визуальное имя чата..." /></div>`);
                     const $tagArea = $(`<div class="co-edit-section co-hidden"><input type="text" class="co-tag-input" value="${tagsStr}" placeholder="Теги (через запятую)..." /></div>`);
+                    const $imageArea = $(`<div class="co-edit-section co-hidden"><input type="text" class="co-image-input" value="${chatImgUrl}" placeholder="URL обложки чата (https://...)" /></div>`);
                     const $noteArea = $(`<div class="co-edit-section co-hidden"><textarea class="co-note-input" placeholder="Заметка...">${note}</textarea></div>`);
                     
-                    $editTray.append($renameArea, $tagArea, $noteArea);
+                    $editTray.append($renameArea, $tagArea, $imageArea, $noteArea);
                     chat.element.append($actionPanel);
                     $wrapper.append($editTray);
 
@@ -416,7 +425,6 @@ function buildFolderUI() {
                         buildFolderUI(); 
                     });
 
-                    // Надежный клик по оригинальным кнопкам Таверны
                     $actionPanel.find(".co-btn-native-rename").on("click", (e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -445,7 +453,9 @@ function buildFolderUI() {
 
                     $actionPanel.find(".co-btn-rename").on("click", (e) => { e.stopPropagation(); toggleEdit($renameArea); });
                     $actionPanel.find(".co-btn-tag").on("click", (e) => { e.stopPropagation(); toggleEdit($tagArea); });
+                    $actionPanel.find(".co-btn-image").on("click", (e) => { e.stopPropagation(); toggleEdit($imageArea); });
                     $actionPanel.find(".co-btn-note").on("click", (e) => { e.stopPropagation(); toggleEdit($noteArea); });
+                    
                     $editTray.on("click", (e) => e.stopPropagation());
 
                     $renameArea.find("input").on("blur keydown", function(e) {
@@ -463,6 +473,21 @@ function buildFolderUI() {
                         saveTags(chat.dataFile, val);
                         const arr = val.split(',').map(t => t.trim()).filter(t => t);
                         $tagsPreview.html(arr.map(t => `<span class="co-tag">${t}</span>`).join(''));
+                        if (e.type === "keydown") $editTray.addClass("co-hidden");
+                    });
+
+                    // Сохранение и предпросмотр картинки
+                    $imageArea.find("input").on("blur keydown", function(e) {
+                        if (e.type === "keydown" && e.key !== "Enter") return;
+                        const val = $(this).val().trim();
+                        saveChatImage(chat.dataFile, val);
+                        if (val) {
+                            $chatImage.attr("src", val).removeClass("co-hidden");
+                            $actionPanel.find(".co-btn-image").addClass("co-active-note");
+                        } else {
+                            $chatImage.removeAttr("src").addClass("co-hidden");
+                            $actionPanel.find(".co-btn-image").removeClass("co-active-note");
+                        }
                         if (e.type === "keydown") $editTray.addClass("co-hidden");
                     });
 
@@ -627,7 +652,6 @@ jQuery(async () => {
             });
         }
         
-        // Запускаем Наблюдателя, чтобы чаты не пропадали
         setTimeout(() => {
             const chatPanel = document.getElementById('rm_chats_tab') || document.body;
             chatObserver.observe(chatPanel, { childList: true, subtree: true });
