@@ -67,6 +67,144 @@
 #co-folder-view .recentChat .chatNameContainer { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
 #co-folder-view .recentChat .chatName { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 0.88em !important; }
 
+/* ВОЗВРАЩАЕМ ОРИГИНАЛЬНУЮ ДАТУ */
+#co-folder-view .recentChat .chatDate { 
+    display: flex !important; 
+    align-items: center !important; 
+    font-size: 0.74em !important; 
+    opacity: 0.65 !important; 
+    white-space: nowrap !important; 
+    margin-top: 2px !important; 
+}
+
+/* СКРЫВАЕМ ОРИГИНАЛЬНЫЕ КНОПКИ ТАВЕРНЫ */
+#co-folder-view .recentChat .chatMessageContainer, 
+#co-folder-view .recentChat .chatActions { 
+    display: none !important; 
+}
+
+/* Наш кастомный блок статистики, приклеенный к дате */
+.co-stats-inline { display: inline-flex; gap: 6px; margin-left: 8px; }
+.co-msg-count, .co-file-size { background: var(--white10a); padding: 1px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--SmartThemeBodyColor); }
+.co-msg-count i, .co-file-size i { font-size: 0.85em; }
+
+/* Теги */
+.co-tags-preview { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.co-tag { font-size: 0.72em; background: var(--white20a); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--SmartThemeBorderColor); white-space: nowrap; color: var(--SmartThemeBodyColor); margin-bottom: 2px; }
+
+/* Кастомная картинка чата */
+.co-chat-custom-image {
+    position: absolute;
+    right: 170px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--SmartThemeBorderColor);
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+/* Заметка - сдвинута левее картинки */
+.co-note-preview { 
+    position: absolute; 
+    right: 225px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    font-size: 0.78em; 
+    color: var(--co-note-color, #f0c060); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    max-width: 25%; 
+    opacity: 0.9; 
+    pointer-events: none; 
+}
+
+/* Панель действий при наведении */
+.co-action-panel { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; gap: 4px; background: var(--black50a); backdrop-filter: blur(2px); padding: 4px 6px; border-radius: 8px; opacity: 0; transition: opacity 0.2s; z-index: 10; }
+#co-folder-view .recentChat:hover .co-action-panel { opacity: 1; }
+.co-action-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, background 0.2s, color 0.2s; color: var(--SmartThemeBodyColor); font-size: 0.85em; }
+.co-action-btn:hover { opacity: 1; background: var(--white20a); }
+.co-active-pin { opacity: 1 !important; color: var(--co-note-color, #f0c060); transform: rotate(-45deg); }
+.co-active-note { opacity: 1 !important; color: var(--co-note-color, #f0c060); }
+.co-btn-trash:hover, .co-bulk-btn-trash:hover { background: var(--SmartThemeErrorColor, #ff4444) !important; color: white !important; opacity: 1 !important; }
+
+/* Лоток для редактирования */
+.co-edit-tray { background: var(--white10a); border-top: 1px dashed var(--SmartThemeBorderColor); padding: 8px 10px; }
+.co-edit-section input, .co-edit-section textarea { width: 100%; background: var(--black50a); border: 1px solid var(--SmartThemeBorderColor); border-radius: 4px; color: var(--SmartThemeBodyColor); padding: 6px; font-family: inherit; font-size: 0.85em; box-sizing: border-box; outline: none; }
+.co-edit-section input:focus, .co-edit-section textarea:focus { border-color: var(--co-note-color, #f0c060); }
+.co-edit-section textarea { min-height: 50px; resize: vertical; }/* Скрываем оригинальный список */
+.recentChatList { display: none !important; }
+.co-hidden { display: none !important; }
+
+/* Контейнеры */
+#co-folder-view { display: flex; flex-direction: column; gap: 6px; padding: 8px; width: 100%; box-sizing: border-box; }
+.co-search-container { position: relative; margin-bottom: 2px; padding: 0 2px; }
+.co-search-input { width: 100%; background: var(--white10a); border: 1px solid var(--SmartThemeBorderColor); border-radius: 8px; padding: 8px 12px 8px 32px; color: var(--SmartThemeBodyColor); font-family: inherit; box-sizing: border-box; outline: none; }
+.co-search-input:focus { border-color: var(--co-note-color, #f0c060); }
+.co-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 0.9em; }
+
+/* Панель массовых действий */
+#co-bulk-panel { display: flex; gap: 8px; align-items: center; background: var(--white20a); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--co-note-color, #f0c060); }
+.co-bulk-count-text { font-size: 0.85em; font-weight: bold; white-space: nowrap; }
+#co-bulk-tag-input { flex: 1; background: var(--black50a); border: 1px solid var(--SmartThemeBorderColor); border-radius: 4px; padding: 4px 8px; color: var(--SmartThemeBodyColor); font-family: inherit; font-size: 0.85em; outline: none; }
+#co-bulk-tag-input:focus { border-color: var(--co-note-color, #f0c060); }
+.co-bulk-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--white10a); border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 0.9em; opacity: 0.8; }
+.co-bulk-btn:hover { background: var(--white30a); opacity: 1; color: var(--co-note-color, #f0c060); }
+
+/* Папка */
+.co-folder { border: 1px solid var(--SmartThemeBorderColor); border-radius: 12px; overflow: hidden; background: var(--white10a); transition: box-shadow 0.2s; }
+.co-folder:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+/* Заголовок папки и контролы */
+.co-folder-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; transition: background 0.2s; border-radius: 12px; }
+.co-folder.co-open .co-folder-header { border-radius: 12px 12px 0 0; }
+.co-folder-header:hover { background: var(--white20a); }
+.co-folder-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--SmartThemeBorderColor); }
+.co-folder-name { font-weight: bold; font-size: 1em; color: var(--SmartThemeBodyColor); }
+.co-folder-count { font-size: 0.78em; background: var(--white20a); border-radius: 10px; padding: 2px 8px; color: var(--SmartThemeBodyColor); opacity: 0.7; margin-right: 4px; }
+
+.co-folder-controls { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.co-sort-btn, .co-color-btn { opacity: 0.4; cursor: pointer; transition: 0.2s; font-size: 0.9em; }
+.co-sort-btn:hover, .co-color-btn:hover { opacity: 1; color: var(--co-note-color, #f0c060); }
+.co-folder-arrow { transition: transform 0.25s; opacity: 0.5; font-size: 0.85em; }
+.co-folder.co-open .co-folder-arrow { transform: rotate(180deg); }
+
+/* Внутренности папки со скроллом */
+.co-folder-chats { display: none; flex-direction: column; border-top: 1px solid var(--SmartThemeBorderColor); padding: 4px 6px; gap: 2px; max-height: 40vh; overflow-y: auto; }
+.co-folder.co-open .co-folder-chats { display: flex; }
+.co-folder-chats::-webkit-scrollbar { width: 6px; }
+.co-folder-chats::-webkit-scrollbar-track { background: transparent; }
+.co-folder-chats::-webkit-scrollbar-thumb { background: var(--white20a); border-radius: 4px; }
+.co-folder-chats::-webkit-scrollbar-thumb:hover { background: var(--white30a); }
+
+/* Обёртка чата */
+.co-chat-wrapper { position: relative; display: flex; flex-direction: column; margin-bottom: 2px; }
+.co-chat-wrapper.co-dragging { opacity: 0.4; }
+.co-chat-wrapper.co-drag-over { border-top: 2px solid var(--co-note-color, #f0c060); }
+
+/* Чекбоксы массовых действий */
+.co-bulk-checkbox { position: absolute; left: 6px; top: 16px; z-index: 5; width: 16px; height: 16px; cursor: pointer; opacity: 0; pointer-events: none; }
+.co-chat-wrapper:hover .co-bulk-checkbox, .co-bulk-checkbox:checked { opacity: 1; pointer-events: auto; }
+#co-folder-view .recentChat .avatar { transition: margin-left 0.2s ease; margin-left: 0px !important; }
+.co-chat-wrapper:hover #co-folder-view .recentChat .avatar,
+.co-chat-wrapper:has(.co-bulk-checkbox:checked) #co-folder-view .recentChat .avatar { margin-left: 22px !important; }
+
+/* ЧАТЫ */
+#co-folder-view .recentChat { display: flex !important; visibility: visible !important; opacity: 1 !important; height: auto !important; min-height: 60px !important; max-height: none !important; overflow: visible !important; position: relative !important; align-items: flex-start !important; padding: 8px 10px !important; border-bottom: none !important; border-radius: 8px !important; cursor: pointer; box-sizing: border-box !important; transition: background 0.15s; }
+#co-folder-view .recentChat:hover { background: var(--white20a) !important; }
+
+#co-folder-view .recentChat .avatar { width: 36px !important; height: 36px !important; min-width: 36px !important; max-width: 36px !important; border-radius: 50% !important; overflow: hidden !important; flex-shrink: 0 !important; position: relative !important; margin-top: 2px !important; }
+#co-folder-view .recentChat .avatar img { width: 36px !important; height: 36px !important; max-width: 36px !important; max-height: 36px !important; object-fit: cover !important; position: absolute !important; top: 0 !important; left: 0 !important; border: none !important; }
+
+/* Увеличили правый отступ для картинки и кнопок */
+#co-folder-view .recentChat .recentChatInfo { flex: 1 !important; overflow: hidden !important; padding-left: 10px !important; padding-right: 250px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; min-width: 0 !important; }
+#co-folder-view .recentChat .chatNameContainer { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+#co-folder-view .recentChat .chatName { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 0.88em !important; }
+
 /* Дата и мусор Таверны */
 #co-folder-view .recentChat .chatDate { display: flex !important; align-items: center !important; font-size: 0.74em !important; opacity: 0.65 !important; white-space: nowrap !important; margin-top: 2px !important; }
 #co-folder-view .recentChat .chatMessageContainer, #co-folder-view .recentChat .chatActions { display: none !important; }
