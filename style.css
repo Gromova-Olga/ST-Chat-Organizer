@@ -62,37 +62,54 @@
 #co-folder-view .recentChat .avatar { width: 36px !important; height: 36px !important; min-width: 36px !important; max-width: 36px !important; border-radius: 50% !important; overflow: hidden !important; flex-shrink: 0 !important; position: relative !important; margin-top: 2px !important; }
 #co-folder-view .recentChat .avatar img { width: 36px !important; height: 36px !important; max-width: 36px !important; max-height: 36px !important; object-fit: cover !important; position: absolute !important; top: 0 !important; left: 0 !important; border: none !important; }
 
-#co-folder-view .recentChat .recentChatInfo { flex: 1 !important; overflow: hidden !important; padding-left: 10px !important; padding-right: 210px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; min-width: 0 !important; }
+/* Увеличили правый отступ для картинки и кнопок */
+#co-folder-view .recentChat .recentChatInfo { flex: 1 !important; overflow: hidden !important; padding-left: 10px !important; padding-right: 250px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; min-width: 0 !important; }
 #co-folder-view .recentChat .chatNameContainer { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
 #co-folder-view .recentChat .chatName { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 0.88em !important; }
 
-/* ВОЗВРАЩАЕМ ОРИГИНАЛЬНУЮ ДАТУ */
-#co-folder-view .recentChat .chatDate { 
-    display: flex !important; 
-    align-items: center !important; 
-    font-size: 0.74em !important; 
-    opacity: 0.65 !important; 
-    white-space: nowrap !important; 
-    margin-top: 2px !important; 
-}
+/* Дата и мусор Таверны */
+#co-folder-view .recentChat .chatDate { display: flex !important; align-items: center !important; font-size: 0.74em !important; opacity: 0.65 !important; white-space: nowrap !important; margin-top: 2px !important; }
+#co-folder-view .recentChat .chatMessageContainer, #co-folder-view .recentChat .chatActions { display: none !important; }
 
-/* СКРЫВАЕМ ОРИГИНАЛЬНЫЕ КНОПКИ ТАВЕРНЫ */
-#co-folder-view .recentChat .chatMessageContainer, 
-#co-folder-view .recentChat .chatActions { 
-    display: none !important; 
-}
-
-/* Наш кастомный блок статистики, приклеенный к дате */
+/* Статистика */
 .co-stats-inline { display: inline-flex; gap: 6px; margin-left: 8px; }
 .co-msg-count, .co-file-size { background: var(--white10a); padding: 1px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--SmartThemeBodyColor); }
 .co-msg-count i, .co-file-size i { font-size: 0.85em; }
 
-/* Теги и Заметки */
+/* Теги */
 .co-tags-preview { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 .co-tag { font-size: 0.72em; background: var(--white20a); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--SmartThemeBorderColor); white-space: nowrap; color: var(--SmartThemeBodyColor); margin-bottom: 2px; }
 
-/* Сдвинули заметку правее, чтобы не мешала кнопкам */
-.co-note-preview { position: absolute; right: 180px; top: 50%; transform: translateY(-50%); font-size: 0.78em; color: var(--co-note-color, #f0c060); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30%; opacity: 0.9; pointer-events: none; }
+/* --- НОВОЕ: Кастомная картинка чата --- */
+.co-chat-custom-image {
+    position: absolute;
+    right: 170px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--SmartThemeBorderColor);
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+/* Заметка - сдвинута левее картинки */
+.co-note-preview { 
+    position: absolute; 
+    right: 225px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    font-size: 0.78em; 
+    color: var(--co-note-color, #f0c060); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    max-width: 25%; 
+    opacity: 0.9; 
+    pointer-events: none; 
+}
 
 /* Панель действий при наведении */
 .co-action-panel { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; gap: 4px; background: var(--black50a); backdrop-filter: blur(2px); padding: 4px 6px; border-radius: 8px; opacity: 0; transition: opacity 0.2s; z-index: 10; }
