@@ -570,3 +570,100 @@
     opacity: 0.6 !important;
     font-size: 0.75em !important;
 }
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+
+/* Адаптация модального окна для мобильных */
+@media (max-width: 768px) {
+    .co-folder-modal-overlay {
+        align-items: flex-start !important;
+        padding: 16px !important;
+        box-sizing: border-box !important;
+    }
+    
+    .co-folder-modal {
+        min-width: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 16px !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        position: relative !important;
+        top: 0 !important;
+        transform: none !important;
+    }
+    
+    .co-folder-modal h3 {
+        font-size: 1em !important;
+        margin-bottom: 12px !important;
+    }
+    
+    .co-folder-modal label {
+        font-size: 0.8em !important;
+    }
+    
+    .co-folder-modal input,
+    .co-folder-modal textarea {
+        font-size: 0.85em !important;
+        padding: 8px !important;
+    }
+    
+    .co-folder-color-row {
+        flex-wrap: wrap !important;
+    }
+    
+    .co-folder-color-row button {
+        padding: 6px 10px !important;
+        font-size: 0.75em !important;
+    }
+    
+    .co-opacity-slider {
+        flex-wrap: wrap !important;
+    }
+    
+    .co-opacity-slider button {
+        padding: 6px 10px !important;
+        font-size: 0.75em !important;
+    }
+    
+    .co-folder-modal-buttons button {
+        padding: 8px 16px !important;
+        font-size: 0.85em !important;
+    }
+    
+    /* Кнопки загрузки и очистки */
+    .co-folder-modal div[style*="display: flex"] {
+        flex-wrap: wrap !important;
+    }
+    
+    .co-folder-modal div[style*="display: flex"] button {
+        padding: 6px 10px !important;
+        font-size: 0.75em !important;
+    }
+}
+
+/* Адаптация контекстного меню для мобильных */
+@media (max-width: 768px) {
+    .co-actions-context-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 20px !important;
+        left: 20px !important;
+        right: 20px !important;
+        transform: none !important;
+        width: auto !important;
+        max-width: none !important;
+        border-radius: 12px !important;
+        z-index: 100001 !important;
+    }
+    
+    .co-context-menu-item {
+        padding: 12px 16px !important;
+        font-size: 1em !important;
+    }
+    
+    .co-context-menu-item i {
+        font-size: 1.1em !important;
+    }
+}
