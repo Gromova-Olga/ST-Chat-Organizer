@@ -777,3 +777,25 @@
         font-size: 0.8em !important;
     }
 }
+
+/* Модальное окно - непрозрачный фон */
+.co-folder-modal-overlay {
+    background: rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.co-folder-modal {
+    background: var(--SmartThemeBodyBg) !important;
+    border: 1px solid var(--SmartThemeBorderColor) !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    min-width: 320px !important;
+    max-width: 400px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+    background-color: #1a1a1a !important; /* Темный фон для непрозрачности */
+}
+
+/* Для светлой темы, если используется */
+[data-theme="light"] .co-folder-modal {
+    background-color: #f5f5f5 !important;
+}
