@@ -355,32 +355,23 @@ function showContextMenu(chatElement, chatData) {
 
     $("body").append(menu);
     
-    // Позиционирование меню
-    const btn = chatElement.find(".co-actions-menu-btn");
-    if (btn.length) {
-        const btnRect = btn[0].getBoundingClientRect();
-        const isMobile = window.innerWidth <= 768;
-        
-        if (isMobile) {
-            // На мобильных - меню под кнопкой
-            menu.css({
-                position: 'fixed',
-                top: btnRect.bottom + 5,
-                right: 'auto',
-                left: btnRect.left,
-                transform: 'none'
-            });
-            
-            // Если выходит за правый край
-            const menuRect = menu[0].getBoundingClientRect();
-            if (menuRect.right > window.innerWidth) {
-                menu.css({
-                    left: 'auto',
-                    right: window.innerWidth - btnRect.right
-                });
-            }
-        } else {
-            // На десктопе - над кнопкой
+    const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        menu.css({
+            position: 'fixed',
+            bottom: '20px',
+            left: '20px',
+            right: '20px',
+            top: 'auto',
+            transform: 'none',
+            width: 'auto',
+            maxWidth: 'none'
+        });
+    } else {
+        const btn = chatElement.find(".co-actions-menu-btn");
+        if (btn.length) {
+            const btnRect = btn[0].getBoundingClientRect();
             menu.css({
                 position: 'fixed',
                 top: btnRect.top - 10,
@@ -393,9 +384,12 @@ function showContextMenu(chatElement, chatData) {
     menu.addClass("show");
 
     const closeMenu = (e) => {
+        if ($(e.target).closest(".co-context-menu-item").length) {
+            return;
+        }
         if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
             menu.remove();
-            $(document).off("click", closeMenu);
+            $(document).off("click touchstart", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
@@ -403,18 +397,19 @@ function showContextMenu(chatElement, chatData) {
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             menu.remove();
-            $(document).off("click", closeMenu);
+            $(document).off("click touchstart", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
     
     setTimeout(() => {
-        $(document).on("click", closeMenu);
+        $(document).on("click touchstart", closeMenu);
         $(document).on("keydown", escapeHandler);
     }, 100);
 
-    menu.find("[data-action]").on("click", (e) => {
+    menu.find("[data-action]").on("click touchstart", (e) => {
         e.stopPropagation();
+        e.preventDefault();
         const action = $(e.currentTarget).data("action");
         
         if (action === "rename") showEditDialog(chatElement, chatData, "rename", displayName);
@@ -433,6 +428,7 @@ function showContextMenu(chatElement, chatData) {
             else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
         }
         menu.remove();
+        $(document).off("click touchstart", closeMenu);
     });
 }
 
@@ -850,20 +846,22 @@ function buildFolderUI() {
                     `);
 
                     chat.element.append($actionsMenuBtn);
-
-// Обработчик для обычного клика/тапа
-                    $actionsMenuBtn.on("click", (e) => {
+                    
+                    // Увеличиваем зону касания для мобильных
+                    $actionsMenuBtn.css({
+                        'touch-action': 'manipulation',
+                        'cursor': 'pointer'
+                    });
+                    
+                    // Объединяем обработчики для мобильных и десктопа
+                    const showMenuHandler = (e) => {
                         e.stopPropagation();
                         e.preventDefault();
                         showContextMenu($wrapper, chat);
-                    });
-
-// Для мобильных - убираем задержку
-                    $actionsMenuBtn.on("touchstart", (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        showContextMenu($wrapper, chat);
-                    });
+                        return false;
+                    };
+                    
+                    $actionsMenuBtn.on("click touchstart", showMenuHandler);
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
@@ -1025,12 +1023,6 @@ function init() {
             });
 
             loadSettings();
-            // Добавьте после loadSettings();
-            console.log("Checking border settings elements:");
-            console.log("- border-radius:", document.querySelector('#co-chat-border-radius'));
-            console.log("- border-width:", document.querySelector('#co-chat-border-width'));
-            console.log("- border-color:", document.querySelector('#co-chat-border-color'));
-            console.log("- border-style:", document.querySelector('#co-chat-border-style'));
             setupImportExport();
 
             $("#co-chat-border-radius").on("input", function() {
