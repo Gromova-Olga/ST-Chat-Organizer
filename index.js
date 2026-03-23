@@ -28,7 +28,8 @@ const defaultSettings = {
     chatBorderRadius: 8,
     chatBorderWidth: 0,
     chatBorderColor: "#444444",
-    chatBorderStyle: "solid"
+    chatBorderStyle: "solid",
+    mobileMode: "longpress"
 };
 
 function loadSettings() {
@@ -60,6 +61,7 @@ function loadSettings() {
     $("#co-chat-border-width-val").text((s.chatBorderWidth ?? 0) + "px");
     $("#co-chat-border-color").val(s.chatBorderColor ?? "#444444");
     $("#co-chat-border-style").val(s.chatBorderStyle ?? "solid");
+    $("#co-mobile-mode").val(s.mobileMode ?? "longpress");
     applyColors();
     console.log(`[${extensionName}] Settings loaded, enabled: ${s.enabled}`);
 }
@@ -847,29 +849,60 @@ function buildFolderUI() {
 
                     chat.element.append($actionsMenuBtn);
                     
-                    // Увеличиваем зону касания для мобильных
-                    $actionsMenuBtn.css({
-                        'touch-action': 'manipulation',
-                        'cursor': 'pointer'
-                    });
-                    
-                    // Объединяем обработчики для мобильных и десктопа
-                    $actionsMenuBtn.on("pointerdown", function(e) {
-                        e.stopImmediatePropagation();
-                        e.stopPropagation();
-                        e.preventDefault();
-                    });
-                    $actionsMenuBtn.on("touchstart", function(e) {
-                        e.stopImmediatePropagation();
-                        e.stopPropagation();
-                        e.preventDefault();
-                    });
-                    $actionsMenuBtn.on("click", function(e) {
-                        e.stopImmediatePropagation();
-                        e.stopPropagation();
-                        e.preventDefault();
-                        showContextMenu($wrapper, chat);
-                    });
+                    $actionsMenuBtn.css({'touch-action': 'manipulation', 'cursor': 'pointer'});
+
+                    const mobileMode = extension_settings[extensionName].mobileMode ?? 'longpress';
+                    const isMobileDevice = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                    if (!isMobileDevice || mobileMode === 'desktop') {
+                        // РЕЖИМ ПК: кнопка три точки
+                        $actionsMenuBtn.on('pointerdown', function(e) {
+                            e.stopImmediatePropagation();
+                            e.stopPropagation();
+                            e.preventDefault();
+                        });
+                        $actionsMenuBtn.on('touchstart', function(e) {
+                            e.stopImmediatePropagation();
+                            e.stopPropagation();
+                            e.preventDefault();
+                        });
+                        $actionsMenuBtn.on('click', function(e) {
+                            e.stopImmediatePropagation();
+                            e.stopPropagation();
+                            e.preventDefault();
+                            showContextMenu($wrapper, chat);
+                        });
+                    } else if (mobileMode === 'longpress') {
+                        // РЕЖИМ ТЕЛЕФОН: долгое нажатие на чат
+                        $actionsMenuBtn.hide();
+                        let longPressTimer = null;
+                        chat.element.on('touchstart', function(e) {
+                            longPressTimer = setTimeout(() => {
+                                longPressTimer = null;
+                                showContextMenu($wrapper, chat);
+                            }, 500);
+                        });
+                        chat.element.on('touchend touchcancel touchmove', function() {
+                            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+                        });
+                    } else if (mobileMode === 'button') {
+                        // РЕЖИМ ТЕЛЕФОН: отдельная кнопка снизу
+                        $actionsMenuBtn.hide();
+                        const $mobileBtn = $('<div class="co-mobile-open-btn">⋯</div>');
+                        $wrapper.append($mobileBtn);
+                        $mobileBtn.on('touchstart', function(e) {
+                            e.stopImmediatePropagation();
+                            e.stopPropagation();
+                            e.preventDefault();
+                            showContextMenu($wrapper, chat);
+                        });
+                        $mobileBtn.on('click', function(e) {
+                            e.stopImmediatePropagation();
+                            e.stopPropagation();
+                            e.preventDefault();
+                            showContextMenu($wrapper, chat);
+                        });
+                    }
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
@@ -1059,6 +1092,12 @@ function init() {
                 extension_settings[extensionName].chatBorderStyle = $(this).val();
                 saveSettingsDebounced();
                 updateChatBorders();
+            });
+
+            $("#co-mobile-mode").on("change", function() {
+                extension_settings[extensionName].mobileMode = $(this).val();
+                saveSettingsDebounced();
+                buildFolderUI();
             });
 
             if (eventSource && event_types?.CHAT_CHANGED) {
