@@ -315,14 +315,12 @@ function removeFolderUI() {
     $(".recentChatList").show();
 }
 
-function showContextMenu(chatElement, chatData, event) {
-    if (event) {
-        event.stopImmediatePropagation();
-        event.preventDefault();
+function showContextMenu(chatElement, chatData) {
+    const existingMenu = $(".co-actions-context-menu");
+    if (existingMenu.length) {
+        existingMenu.remove();
+        return;
     }
-
-    // Всегда закрываем старое меню
-    $(".co-actions-context-menu").remove();
 
     const s = extension_settings[extensionName];
     const note = s.notes?.[chatData.dataFile] || "";
@@ -356,9 +354,9 @@ function showContextMenu(chatElement, chatData, event) {
     `);
 
     $("body").append(menu);
-
+    
     const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
+    
     if (isMobile) {
         menu.css({
             position: 'fixed',
@@ -368,8 +366,7 @@ function showContextMenu(chatElement, chatData, event) {
             top: 'auto',
             transform: 'none',
             width: 'auto',
-            maxWidth: 'none',
-            zIndex: '2147483647'
+            maxWidth: 'none'
         });
     } else {
         const btn = chatElement.find(".co-actions-menu-btn");
@@ -379,24 +376,60 @@ function showContextMenu(chatElement, chatData, event) {
                 position: 'fixed',
                 top: btnRect.top - 10,
                 right: window.innerWidth - btnRect.left + 10,
-                transform: 'translateY(-100%)',
-                zIndex: '2147483647'
+                transform: 'translateY(-100%)'
             });
         }
     }
-
+    
     menu.addClass("show");
 
-    // Закрытие по тапу вне меню (увеличенная задержка специально для телефона)
     const closeMenu = (e) => {
-        if ($(e.target).closest(".co-context-menu-item, .co-actions-menu-btn").length) return;
-        menu.remove();
-        $(document).off("click touchstart", closeMenu);
+        if ($(e.target).closest(".co-context-menu-item").length) {
+            return;
+        }
+        if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
+            menu.remove();
+            $(document).off("click touchend", closeMenu);
+            $(document).off("keydown", escapeHandler);
+        }
     };
-
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            menu.remove();
+            $(document).off("click touchend", closeMenu);
+            $(document).off("keydown", escapeHandler);
+        }
+    };
+    
     setTimeout(() => {
-        $(document).on("click touchstart", closeMenu);
-    }, 400);
+        $(document).on("click touchend", closeMenu);
+        $(document).on("keydown", escapeHandler);
+    }, 100);
+
+    menu.find("[data-action]").on("click touchend", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const action = $(e.currentTarget).data("action");
+        
+        if (action === "rename") showEditDialog(chatElement, chatData, "rename", displayName);
+        else if (action === "tag") showEditDialog(chatElement, chatData, "tag", tagsStr);
+        else if (action === "note") showEditDialog(chatElement, chatData, "note", note);
+        else if (action === "pin") {
+            togglePin(chatData.dataFile);
+            buildFolderUI();
+        } else if (action === "native-rename") {
+            const target = chatData.element.find('.chat_edit, .edit_chat, .ch_edit, [title="Edit chat name"], .chatActions .fa-pen-to-square').first();
+            if (target.length) target.click();
+            else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку переименования", "Chat Organizer");
+        } else if (action === "delete") {
+            const target = chatData.element.find('.delete_chat, .chat_delete, .ch_del, [title="Delete chat"], .chatActions .fa-trash').first();
+            if (target.length) target.click();
+            else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
+        }
+        menu.remove();
+        $(document).off("click touchend", closeMenu);
+    });
 }
 
 function showEditDialog(chatElement, chatData, type, currentValue) {
@@ -806,36 +839,37 @@ function buildFolderUI() {
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
                     chat.element.append($chatImage);
 
-                   const $actionsMenuBtn = $(`
-                       <div class="co-actions-menu-btn" title="Действия">
-                           <i class="fa-solid fa-ellipsis-vertical"></i>
-                       </div>
-                   `);
+                    const $actionsMenuBtn = $(`
+                        <div class="co-actions-menu-btn" title="Действия">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </div>
+                    `);
 
-                   chat.element.append($actionsMenuBtn);
-
-                   $actionsMenuBtn.css({
-                       'touch-action': 'manipulation',
-                       'cursor': 'pointer',
-                       '-webkit-tap-highlight-color': 'transparent'
-                   });
-
-                   const showMenuHandler = (e) => {
-                       e.stopImmediatePropagation();
-                       e.preventDefault();
-
-    // Защита от двойного срабатывания (touchend + click)
-                   if (window.coLastMenuTime && Date.now() - window.coLastMenuTime < 300) {
-                       return;
-                   }
-                   window.coLastMenuTime = Date.now();
-
-                   showContextMenu($wrapper, chat, e);
-                   return false;
-                   };
-
-// Работает идеально и на телефоне, и на ПК
-                    $actionsMenuBtn.on("click touchend", showMenuHandler);
+                    chat.element.append($actionsMenuBtn);
+                    
+                    // Увеличиваем зону касания для мобильных
+                    $actionsMenuBtn.css({
+                        'touch-action': 'manipulation',
+                        'cursor': 'pointer'
+                    });
+                    
+                    // Объединяем обработчики для мобильных и десктопа
+                    // touchend используется вместо touchstart чтобы избежать
+                    // моментального закрытия меню тем же касанием через document closeMenu
+                    let touchHandled = false;
+                    $actionsMenuBtn.on("touchend", function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        touchHandled = true;
+                        showContextMenu($wrapper, chat);
+                        setTimeout(() => { touchHandled = false; }, 300);
+                    });
+                    $actionsMenuBtn.on("click", function(e) {
+                        if (touchHandled) return; // не дублировать после touchend
+                        e.stopPropagation();
+                        e.preventDefault();
+                        showContextMenu($wrapper, chat);
+                    });
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
