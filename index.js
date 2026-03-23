@@ -389,7 +389,7 @@ function showContextMenu(chatElement, chatData) {
         }
         if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
             menu.remove();
-            $(document).off("click touchstart", closeMenu);
+            $(document).off("click", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
@@ -397,17 +397,17 @@ function showContextMenu(chatElement, chatData) {
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             menu.remove();
-            $(document).off("click touchstart", closeMenu);
+            $(document).off("click", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
     
     setTimeout(() => {
-        $(document).on("click touchstart", closeMenu);
+        $(document).on("click", closeMenu);
         $(document).on("keydown", escapeHandler);
     }, 100);
 
-    menu.find("[data-action]").on("click touchstart", (e) => {
+    menu.find("[data-action]").on("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
         const action = $(e.currentTarget).data("action");
@@ -428,7 +428,7 @@ function showContextMenu(chatElement, chatData) {
             else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
         }
         menu.remove();
-        $(document).off("click touchstart", closeMenu);
+        $(document).off("click", closeMenu);
     });
 }
 
@@ -853,21 +853,12 @@ function buildFolderUI() {
                         'cursor': 'pointer'
                     });
                     
-                    // DEBUG — показывает toastr при каждом событии на кнопке
-                    $actionsMenuBtn.on("touchstart touchend touchcancel click pointerdown pointerup", function(e) {
-                        const msg = `[CO] btn: ${e.type}`;
-                        console.log(msg);
-                        if (typeof toastr !== 'undefined') toastr.info(msg, "CO Debug", {timeOut: 2000});
-                    });
-
-                    const showMenuHandler = (e) => {
+                    // pointerdown срабатывает ровно один раз (тач и мышь) — без дубликата
+                    $actionsMenuBtn.on("pointerdown", function(e) {
                         e.stopPropagation();
                         e.preventDefault();
                         showContextMenu($wrapper, chat);
-                        return false;
-                    };
-                    
-                    $actionsMenuBtn.on("click touchstart", showMenuHandler);
+                    });
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
