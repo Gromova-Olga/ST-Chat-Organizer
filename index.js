@@ -854,15 +854,21 @@ function buildFolderUI() {
                     });
                     
                     // Объединяем обработчики для мобильных и десктопа
-                    // Обрабатываем нажатие на .recentChat:
-                    // если тап попал в кнопку — открываем меню, иначе — открываем чат
-                    chat.element.on("click", function(e) {
-                        const $btn = $(e.target).closest(".co-actions-menu-btn");
-                        if ($btn.length) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            showContextMenu($wrapper, chat);
-                        }
+                    $actionsMenuBtn.on("pointerdown", function(e) {
+                        e.stopImmediatePropagation();
+                        e.stopPropagation();
+                        e.preventDefault();
+                    });
+                    $actionsMenuBtn.on("touchstart", function(e) {
+                        e.stopImmediatePropagation();
+                        e.stopPropagation();
+                        e.preventDefault();
+                    });
+                    $actionsMenuBtn.on("click", function(e) {
+                        e.stopImmediatePropagation();
+                        e.stopPropagation();
+                        e.preventDefault();
+                        showContextMenu($wrapper, chat);
                     });
 
                     $wrapper.on("dragstart", function(e) {
