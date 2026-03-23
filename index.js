@@ -355,14 +355,39 @@ function showContextMenu(chatElement, chatData) {
 
     $("body").append(menu);
     
-    const btn = chatElement.find(".co-actions-menu-btn");
-    const btnRect = btn[0].getBoundingClientRect();
-    menu.css({
-        position: 'fixed',
-        top: btnRect.top - 10,
-        right: window.innerWidth - btnRect.left + 10,
-        transform: 'translateY(-100%)'
-    });
+    // Проверяем, мобильное ли устройство
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Для мобильных - меню снизу
+        menu.css({
+            position: 'fixed',
+            bottom: '20px',
+            left: '20px',
+            right: '20px',
+            top: 'auto',
+            transform: 'none'
+        });
+    } else {
+        // Для десктопа - меню над кнопкой
+        const btn = chatElement.find(".co-actions-menu-btn");
+        if (btn.length) {
+            const btnRect = btn[0].getBoundingClientRect();
+            menu.css({
+                position: 'fixed',
+                top: btnRect.top - 10,
+                right: window.innerWidth - btnRect.left + 10,
+                transform: 'translateY(-100%)'
+            });
+        } else {
+            menu.css({
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)'
+            });
+        }
+    }
     
     menu.addClass("show");
 
@@ -409,7 +434,6 @@ function showContextMenu(chatElement, chatData) {
         menu.remove();
     });
 }
-
 function showEditDialog(chatElement, chatData, type, currentValue) {
     const titles = {
         rename: "Визуальное имя чата",
