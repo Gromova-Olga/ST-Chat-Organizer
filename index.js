@@ -411,24 +411,6 @@ function showContextMenu(chatElement, chatData) {
         $(document).on("keydown", escapeHandler);
     }, 200);
 
-    const escapeHandler = (e) => {
-        if (e.key === 'Escape') {
-            menu.remove();
-            $(document).off("click pointerdown", closeMenu);
-            $(document).off("keydown", escapeHandler);
-        }
-    };
-    
-    setTimeout(() => {
-        $(document).on("click pointerdown", closeMenu);
-        $(document).on("keydown", escapeHandler);
-    }, 100);
-    
-    setTimeout(() => {
-        $(document).on("click", closeMenu);
-        $(document).on("keydown", escapeHandler);
-    }, 100);
-
     menu.find("[data-action]").on("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -450,7 +432,7 @@ function showContextMenu(chatElement, chatData) {
             else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
         }
         menu.remove();
-        $(document).off("click", closeMenu);
+        $(document).off("click touchstart", closeMenu);
     });
 }
 
