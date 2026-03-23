@@ -347,31 +347,48 @@ function showContextMenu(chatElement, chatData, event) {
     const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-        menu.css({ position: 'fixed', bottom: '20px', left: '20px', right: '20px', top: 'auto', transform: 'none', width: 'auto', maxWidth: 'none', zIndex: '2147483647' });
+        menu.css({ 
+            position: 'fixed', 
+            bottom: '20px', 
+            left: '20px', 
+            right: '20px', 
+            top: 'auto', 
+            transform: 'none', 
+            width: 'auto', 
+            maxWidth: 'none', 
+            zIndex: '2147483647',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.6)'
+        });
     } else {
         const btn = chatElement.find(".co-actions-menu-btn");
         if (btn.length) {
             const btnRect = btn[0].getBoundingClientRect();
-            menu.css({ position: 'fixed', top: btnRect.top - 10, right: window.innerWidth - btnRect.left + 10, transform: 'translateY(-100%)', zIndex: '2147483647' });
+            menu.css({ 
+                position: 'fixed', 
+                top: btnRect.top - 10, 
+                right: window.innerWidth - btnRect.left + 10, 
+                transform: 'translateY(-100%)', 
+                zIndex: '2147483647' 
+            });
         }
     }
 
     menu.addClass("show");
 
-    // Защита от мгновенного закрытия при отпускании пальца
-    window.coMenuJustOpened = true;
-    setTimeout(() => { window.coMenuJustOpened = false; }, 600);
+    // === ЗАЩИТА ОТ МГНОВЕННОГО ЗАКРЫТИЯ ===
+    window.coMenuJustOpened = Date.now();
 
     const closeMenu = (e) => {
-        if (window.coMenuJustOpened) return;
+        if (Date.now() - window.coMenuJustOpened < 700) return;
         if ($(e.target).closest(".co-context-menu-item, .co-actions-menu-btn").length) return;
+        
         menu.remove();
-        $(document).off("click touchend", closeMenu);
+        $(document).off("click touchstart", closeMenu);
     };
 
     setTimeout(() => {
-        $(document).on("click touchend", closeMenu);
-    }, 450);
+        $(document).on("click touchstart", closeMenu);
+    }, 100);
 }
 
 function showEditDialog(chatElement, chatData, type, currentValue) {
@@ -781,6 +798,7 @@ function buildFolderUI() {
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
                     chat.element.append($chatImage);
 
+                    // ==================== НОВАЯ КНОПКА ТРЁХ ТОЧЕК ====================
                     const $actionsMenuBtn = $(`
                         <div class="co-actions-menu-btn" title="Действия">
                             <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -795,27 +813,27 @@ function buildFolderUI() {
                         '-webkit-tap-highlight-color': 'transparent'
                     });
 
-                    // Защита от случайного двойного вызова
+                    // ←←← САМЫЙ НОВЫЙ ОБРАБОТЧИК (решает проблему на телефоне)
                     const showMenuHandler = (e) => {
                         e.stopImmediatePropagation();
                         e.preventDefault();
 
-                        if (window.coLastMenuTime && Date.now() - window.coLastMenuTime < 250) return;
+                        if (window.coLastMenuTime && Date.now() - window.coLastMenuTime < 300) return;
                         window.coLastMenuTime = Date.now();
+
+                        // Временно отключаем draggable, чтобы не начинался drag
+                        const $wrapper = chat.element.closest('.co-chat-wrapper');
+                        $wrapper.attr('draggable', 'false');
+                        setTimeout(() => $wrapper.attr('draggable', 'true'), 800);
 
                         showContextMenu($wrapper, chat, e);
                         return false;
                     };
 
-                    $actionsMenuBtn.on("click touchend", showMenuHandler);
-
-                    // ←←← НОВОЕ: полностью отключаем drag именно при нажатии на кнопку
-                    $actionsMenuBtn.on("touchstart mousedown", function(e) {
-                        e.stopImmediatePropagation();
-                    });
+                    $actionsMenuBtn.on("touchstart click", showMenuHandler);
+                    // ================================================================
 
                     $wrapper.on("dragstart", function(e) {
-                        // ←←← НОВОЕ: если нажали именно на кнопку меню — drag НЕ начинать!
                         if ($(e.target).closest('.co-actions-menu-btn').length > 0) {
                             e.preventDefault();
                             return false;
