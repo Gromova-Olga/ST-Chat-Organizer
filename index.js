@@ -315,9 +315,6 @@ function removeFolderUI() {
     $(".recentChatList").show();
 }
 
-// Глобальный флаг: блокирует closeMenu сразу после открытия меню через тач
-let _menuOpenedByTouch = false;
-
 function showContextMenu(chatElement, chatData) {
     const existingMenu = $(".co-actions-context-menu");
     if (existingMenu.length) {
@@ -387,19 +384,16 @@ function showContextMenu(chatElement, chatData) {
     menu.addClass("show");
 
     const closeMenu = (e) => {
-        // Если меню открыто тачем — пропускаем первый touchstart/click который его открыл
-        if (_menuOpenedByTouch) {
-            _menuOpenedByTouch = false;
+        if ($(e.target).closest(".co-context-menu-item").length) {
             return;
         }
-        if ($(e.target).closest(".co-context-menu-item").length) return;
         if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
             menu.remove();
             $(document).off("click touchstart", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
-
+    
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             menu.remove();
@@ -407,15 +401,17 @@ function showContextMenu(chatElement, chatData) {
             $(document).off("keydown", escapeHandler);
         }
     };
-
-    $(document).on("click touchstart", closeMenu);
-    $(document).on("keydown", escapeHandler);
+    
+    setTimeout(() => {
+        $(document).on("click touchstart", closeMenu);
+        $(document).on("keydown", escapeHandler);
+    }, 100);
 
     menu.find("[data-action]").on("click touchstart", (e) => {
         e.stopPropagation();
         e.preventDefault();
         const action = $(e.currentTarget).data("action");
-
+        
         if (action === "rename") showEditDialog(chatElement, chatData, "rename", displayName);
         else if (action === "tag") showEditDialog(chatElement, chatData, "tag", tagsStr);
         else if (action === "note") showEditDialog(chatElement, chatData, "note", note);
@@ -856,18 +852,22 @@ function buildFolderUI() {
                         'touch-action': 'manipulation',
                         'cursor': 'pointer'
                     });
+                    
+                    // DEBUG — показывает toastr при каждом событии на кнопке
+                    $actionsMenuBtn.on("touchstart touchend touchcancel click pointerdown pointerup", function(e) {
+                        const msg = `[CO] btn: ${e.type}`;
+                        console.log(msg);
+                        if (typeof toastr !== 'undefined') toastr.info(msg, "CO Debug", {timeOut: 2000});
+                    });
 
-                    $actionsMenuBtn.on("touchstart", function(e) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        _menuOpenedByTouch = true; // закрыватель пропустит этот же touchstart
-                        showContextMenu($wrapper, chat);
-                    });
-                    $actionsMenuBtn.on("click", function(e) {
+                    const showMenuHandler = (e) => {
                         e.stopPropagation();
                         e.preventDefault();
                         showContextMenu($wrapper, chat);
-                    });
+                        return false;
+                    };
+                    
+                    $actionsMenuBtn.on("click touchstart", showMenuHandler);
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
