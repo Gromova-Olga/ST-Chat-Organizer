@@ -361,33 +361,15 @@ function showContextMenu(chatElement, chatData) {
         const btnRect = btn[0].getBoundingClientRect();
         const isMobile = window.innerWidth <= 768;
         
-        if (isMobile) {
-            // На мобильных - меню под кнопкой
-            menu.css({
-                position: 'fixed',
-                top: btnRect.bottom + 5,
-                right: 'auto',
-                left: btnRect.left,
-                transform: 'none'
-            });
-            
-            // Если выходит за правый край
-            const menuRect = menu[0].getBoundingClientRect();
-            if (menuRect.right > window.innerWidth) {
-                menu.css({
-                    left: 'auto',
-                    right: window.innerWidth - btnRect.right
-                });
-            }
-        } else {
+        if (!isMobile) {
             // На десктопе - над кнопкой
             menu.css({
-                position: 'fixed',
                 top: btnRect.top - 10,
                 right: window.innerWidth - btnRect.left + 10,
                 transform: 'translateY(-100%)'
             });
         }
+        // На мобильных CSS медиа-запрос сам разместит его снизу экрана
     }
     
     menu.addClass("show");
@@ -395,7 +377,7 @@ function showContextMenu(chatElement, chatData) {
     const closeMenu = (e) => {
         if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
             menu.remove();
-            $(document).off("click", closeMenu);
+            $(document).off("click pointerup", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
@@ -403,34 +385,30 @@ function showContextMenu(chatElement, chatData) {
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             menu.remove();
-            $(document).off("click", closeMenu);
+            $(document).off("click pointerup", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
     
     setTimeout(() => {
-        $(document).on("click", closeMenu);
+        $(document).on("click pointerup", closeMenu);
         $(document).on("keydown", escapeHandler);
     }, 100);
 
     menu.find("[data-action]").on("click", (e) => {
         e.stopPropagation();
         const action = $(e.currentTarget).data("action");
-        
+        // Логика кнопок осталась прежней
         if (action === "rename") showEditDialog(chatElement, chatData, "rename", displayName);
         else if (action === "tag") showEditDialog(chatElement, chatData, "tag", tagsStr);
         else if (action === "note") showEditDialog(chatElement, chatData, "note", note);
-        else if (action === "pin") {
-            togglePin(chatData.dataFile);
-            buildFolderUI();
-        } else if (action === "native-rename") {
+        else if (action === "pin") { togglePin(chatData.dataFile); buildFolderUI(); } 
+        else if (action === "native-rename") {
             const target = chatData.element.find('.chat_edit, .edit_chat, .ch_edit, [title="Edit chat name"], .chatActions .fa-pen-to-square').first();
             if (target.length) target.click();
-            else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку переименования", "Chat Organizer");
         } else if (action === "delete") {
             const target = chatData.element.find('.delete_chat, .chat_delete, .ch_del, [title="Delete chat"], .chatActions .fa-trash').first();
             if (target.length) target.click();
-            else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
         }
         menu.remove();
     });
@@ -805,7 +783,10 @@ function buildFolderUI() {
                     const displayName = s.chatNames?.[chat.dataFile] || chat.originalName;
                     if (displayName !== chat.originalName) chat.element.find(".chatName span:last-child").text(displayName);
 
-                    const $wrapper = $(`<div class="co-chat-wrapper" draggable="true" data-file="${chat.dataFile}"></div>`);
+                    const isMobileUI = window.innerWidth <= 768;
+// Отключаем нативный drag-and-drop для телефонов, так как он блокирует нажатия
+                    const draggableAttr = isMobileUI ? '' : 'draggable="true"';
+                    const $wrapper = $(`<div class="co-chat-wrapper" ${draggableAttr} data-file="${chat.dataFile}"></div>`);
                     const $checkbox = $(`<input type="checkbox" class="co-bulk-checkbox" value="${chat.dataFile}" />`);
                     $wrapper.append($checkbox);
 
