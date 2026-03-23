@@ -386,24 +386,30 @@ function showContextMenu(chatElement, chatData) {
     menu.addClass("show");
 
     const closeMenu = (e) => {
-        // Игнорируем клики внутри самого меню
-        if ($(e.target).closest(".co-actions-context-menu").length) {
-            return;
-        }
-        // Игнорируем клики по кнопкам открытия (и десктоп, и мобильная)
-        if ($(e.target).closest(".co-actions-menu-btn, .co-mobile-open-btn").length) {
-            return;
-        }
-        // Защита от фантомного клика после долгого нажатия
-        if (window.coIgnoreNextClose) {
+        // Если кликаем по самому меню или кнопкам его вызова - ничего не делаем
+        if ($(e.target).closest(".co-actions-context-menu, .co-actions-menu-btn, .co-mobile-open-btn").length) {
             return;
         }
 
         menu.remove();
-        // Используем pointerdown для надежного закрытия по тапу в пустоту на iOS/Android
-        $(document).off("click pointerdown", closeMenu);
+        // Используем click и touchstart для надежного закрытия
+        $(document).off("click touchstart", closeMenu);
         $(document).off("keydown", escapeHandler);
     };
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            menu.remove();
+            $(document).off("click touchstart", closeMenu);
+            $(document).off("keydown", escapeHandler);
+        }
+    };
+    
+    // Увеличиваем таймаут до 200мс, чтобы меню точно успело "отделиться" от текущего клика
+    setTimeout(() => {
+        $(document).on("click touchstart", closeMenu);
+        $(document).on("keydown", escapeHandler);
+    }, 200);
 
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
@@ -870,72 +876,82 @@ function buildFolderUI() {
 
                     if (!isMobileDevice || mobileMode === 'desktop') {
                         // РЕЖИМ ПК: кнопка три точки
-                        $actionsMenuBtn.on('pointerdown touchstart', function(e) {
-                            e.stopImmediatePropagation();
-                            e.stopPropagation();
-                            e.preventDefault();
-                        });
                         $actionsMenuBtn.on('click', function(e) {
                             e.stopImmediatePropagation();
                             e.stopPropagation();
                             e.preventDefault();
                             showContextMenu($wrapper, chat);
                         });
+                        // Глушим случайные тапы на тачскринах ПК
+                        $actionsMenuBtn.on('touchstart pointerdown', function(e) {
+                            e.stopPropagation();
+                        });
                     } else if (mobileMode === 'longpress') {
                         // РЕЖИМ ТЕЛЕФОН: долгое нажатие на чат
                         $actionsMenuBtn.hide();
                         let longPressTimer = null;
-                        let isLongPressed = false;
                         
                         chat.element.on('touchstart', function(e) {
-                            isLongPressed = false;
+                            if (longPressTimer) clearTimeout(longPressTimer);
+                            
                             longPressTimer = setTimeout(() => {
                                 longPressTimer = null;
-                                isLongPressed = true;
-                                window.coIgnoreNextClose = true; // Блокируем следующий фантомный клик
+                                // Ставим метку, что лонгпресс успешно сработал
+                                chat.element.attr('data-longpressed', 'true');
                                 showContextMenu($wrapper, chat);
-                            }, 400); // 400мс ощущается чуть отзывчивее
+                                
+                                // Даем легкую вибрацию (если телефон поддерживает), чтобы юзер понял, что можно отпускать
+                                if (navigator.vibrate) navigator.vibrate(50);
+                            }, 500);
                         });
                         
-                        chat.element.on('touchend touchcancel', function() {
-                            if (longPressTimer) { 
-                                clearTimeout(longPressTimer); 
-                                longPressTimer = null; 
-                            }
-                            if (isLongPressed) {
-                                // Снимаем блокировку через полсекунды после того как отпустили палец
-                                setTimeout(() => { window.coIgnoreNextClose = false; }, 500);
-                                isLongPressed = false;
-                            }
-                        });
-
-                        // Отменяем меню, если пользователь начал свайпать (скроллить) чаты
+                        // Если палец поехал (скроллим список) - отменяем открытие
                         chat.element.on('touchmove', function() {
                             if (longPressTimer) { 
                                 clearTimeout(longPressTimer); 
                                 longPressTimer = null; 
                             }
                         });
+
+                        chat.element.on('touchend touchcancel', function(e) {
+                            if (longPressTimer) { 
+                                clearTimeout(longPressTimer); 
+                                longPressTimer = null; 
+                            }
+                            
+                            // Самая важная часть: если меню открылось, e.preventDefault() убивает фантомный клик!
+                            if (chat.element.attr('data-longpressed') === 'true') {
+                                e.preventDefault();
+                                // Снимаем метку чуть позже
+                                setTimeout(() => chat.element.removeAttr('data-longpressed'), 300);
+                            }
+                        });
+
+                        // Дополнительная защита: если клик всё же прорвался
+                        chat.element.on('click', function(e) {
+                            if (chat.element.attr('data-longpressed') === 'true') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
+                        });
+
                     } else if (mobileMode === 'button') {
                         // РЕЖИМ ТЕЛЕФОН: отдельная кнопка снизу
                         $actionsMenuBtn.hide();
                         const $mobileBtn = $('<div class="co-mobile-open-btn">⋯</div>');
                         $wrapper.append($mobileBtn);
                         
-                        $mobileBtn.on('pointerdown touchstart', function(e) {
-                            e.stopImmediatePropagation();
-                            e.stopPropagation();
-                            e.preventDefault();
-                            // Защита от двойного открытия
-                            if ($(".co-actions-context-menu").length === 0) {
-                                showContextMenu($wrapper, chat);
-                            }
-                        });
-                        
+                        // Используем только обычный клик
                         $mobileBtn.on('click', function(e) {
                             e.stopImmediatePropagation();
                             e.stopPropagation();
                             e.preventDefault();
+                            showContextMenu($wrapper, chat);
+                        });
+                        
+                        // Изолируем кнопку от тач-событий самого чата, чтобы они не конфликтовали
+                        $mobileBtn.on('touchstart touchmove touchend', function(e) {
+                            e.stopPropagation();
                         });
                     }
 
