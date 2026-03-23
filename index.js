@@ -848,11 +848,20 @@ function buildFolderUI() {
                             <i class="fa-solid fa-ellipsis-vertical"></i>
                         </div>
                     `);
-                    
+
                     chat.element.append($actionsMenuBtn);
-                    
+
+// Обработчик для обычного клика/тапа
                     $actionsMenuBtn.on("click", (e) => {
                         e.stopPropagation();
+                        e.preventDefault();
+                        showContextMenu($wrapper, chat);
+                    });
+
+// Для мобильных - убираем задержку
+                    $actionsMenuBtn.on("touchstart", (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
                         showContextMenu($wrapper, chat);
                     });
 
