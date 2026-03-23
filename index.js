@@ -383,10 +383,18 @@ function showContextMenu(chatElement, chatData) {
     
     menu.addClass("show");
 
+    // Флаг: меню только что открылось — первый внешний клик/тап игнорируем,
+    // иначе то же самое касание которым открыли меню сразу же его закроет.
+    let menuJustOpened = true;
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            menuJustOpened = false;
+        });
+    });
+
     const closeMenu = (e) => {
-        if ($(e.target).closest(".co-context-menu-item").length) {
-            return;
-        }
+        if (menuJustOpened) return;
+        if ($(e.target).closest(".co-context-menu-item").length) return;
         if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
             menu.remove();
             $(document).off("click touchend", closeMenu);
@@ -402,10 +410,8 @@ function showContextMenu(chatElement, chatData) {
         }
     };
     
-    setTimeout(() => {
-        $(document).on("click touchend", closeMenu);
-        $(document).on("keydown", escapeHandler);
-    }, 100);
+    $(document).on("click touchend", closeMenu);
+    $(document).on("keydown", escapeHandler);
 
     menu.find("[data-action]").on("click touchend", (e) => {
         e.stopPropagation();
@@ -853,21 +859,21 @@ function buildFolderUI() {
                         'cursor': 'pointer'
                     });
                     
-                    // Объединяем обработчики для мобильных и десктопа
-                    // touchend используется вместо touchstart чтобы избежать
-                    // моментального закрытия меню тем же касанием через document closeMenu
-                    let touchHandled = false;
+                    // Объединяем обработчики для мобильных и десктопа.
+                    // Используем touchend (не touchstart и не click-после-touch),
+                    // чтобы событие не конфликтовало с closeMenu на document.
+                    let lastTouchEnd = 0;
                     $actionsMenuBtn.on("touchend", function(e) {
                         e.stopPropagation();
                         e.preventDefault();
-                        touchHandled = true;
+                        lastTouchEnd = Date.now();
                         showContextMenu($wrapper, chat);
-                        setTimeout(() => { touchHandled = false; }, 300);
                     });
+                    // click срабатывает после touchend на ~300ms — пропускаем его
                     $actionsMenuBtn.on("click", function(e) {
-                        if (touchHandled) return; // не дублировать после touchend
                         e.stopPropagation();
                         e.preventDefault();
+                        if (Date.now() - lastTouchEnd < 600) return;
                         showContextMenu($wrapper, chat);
                     });
 
