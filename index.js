@@ -321,6 +321,7 @@ function showContextMenu(chatElement, chatData, event) {
         event.preventDefault();
     }
 
+    // Всегда закрываем старое меню
     $(".co-actions-context-menu").remove();
 
     const s = extension_settings[extensionName];
@@ -331,14 +332,26 @@ function showContextMenu(chatElement, chatData, event) {
 
     const menu = $(`
         <div class="co-actions-context-menu">
-            <div class="co-context-menu-item" data-action="rename"><i class="fa-solid fa-pen"></i> <span>Переименовать</span></div>
-            <div class="co-context-menu-item" data-action="tag"><i class="fa-solid fa-tags"></i> <span>Теги</span></div>
-            <div class="co-context-menu-item" data-action="note"><i class="fa-solid ${note ? 'fa-note-sticky' : 'fa-plus'}"></i> <span>Заметка</span></div>
+            <div class="co-context-menu-item" data-action="rename">
+                <i class="fa-solid fa-pen"></i> <span>Переименовать</span>
+            </div>
+            <div class="co-context-menu-item" data-action="tag">
+                <i class="fa-solid fa-tags"></i> <span>Теги</span>
+            </div>
+            <div class="co-context-menu-item" data-action="note">
+                <i class="fa-solid ${note ? 'fa-note-sticky' : 'fa-plus'}"></i> <span>Заметка</span>
+            </div>
             <div class="co-context-menu-divider"></div>
-            <div class="co-context-menu-item" data-action="pin"><i class="fa-solid fa-thumbtack"></i> <span>${isPinned ? 'Открепить' : 'Закрепить'}</span></div>
+            <div class="co-context-menu-item" data-action="pin">
+                <i class="fa-solid fa-thumbtack"></i> <span>${isPinned ? 'Открепить' : 'Закрепить'}</span>
+            </div>
             <div class="co-context-menu-divider"></div>
-            <div class="co-context-menu-item" data-action="native-rename"><i class="fa-solid fa-file-signature"></i> <span>Системное имя</span></div>
-            <div class="co-context-menu-item" data-action="delete"><i class="fa-solid fa-trash"></i> <span>Удалить чат</span></div>
+            <div class="co-context-menu-item" data-action="native-rename">
+                <i class="fa-solid fa-file-signature"></i> <span>Системное имя</span>
+            </div>
+            <div class="co-context-menu-item" data-action="delete">
+                <i class="fa-solid fa-trash"></i> <span>Удалить чат</span>
+            </div>
         </div>
     `);
 
@@ -347,48 +360,43 @@ function showContextMenu(chatElement, chatData, event) {
     const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-        menu.css({ 
-            position: 'fixed', 
-            bottom: '20px', 
-            left: '20px', 
-            right: '20px', 
-            top: 'auto', 
-            transform: 'none', 
-            width: 'auto', 
-            maxWidth: 'none', 
-            zIndex: '2147483647',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.6)'
+        menu.css({
+            position: 'fixed',
+            bottom: '20px',
+            left: '20px',
+            right: '20px',
+            top: 'auto',
+            transform: 'none',
+            width: 'auto',
+            maxWidth: 'none',
+            zIndex: '2147483647'
         });
     } else {
         const btn = chatElement.find(".co-actions-menu-btn");
         if (btn.length) {
             const btnRect = btn[0].getBoundingClientRect();
-            menu.css({ 
-                position: 'fixed', 
-                top: btnRect.top - 10, 
-                right: window.innerWidth - btnRect.left + 10, 
-                transform: 'translateY(-100%)', 
-                zIndex: '2147483647' 
+            menu.css({
+                position: 'fixed',
+                top: btnRect.top - 10,
+                right: window.innerWidth - btnRect.left + 10,
+                transform: 'translateY(-100%)',
+                zIndex: '2147483647'
             });
         }
     }
 
     menu.addClass("show");
 
-    // === ЗАЩИТА ОТ МГНОВЕННОГО ЗАКРЫТИЯ ===
-    window.coMenuJustOpened = Date.now();
-
+    // Закрытие по тапу вне меню (увеличенная задержка специально для телефона)
     const closeMenu = (e) => {
-        if (Date.now() - window.coMenuJustOpened < 700) return;
         if ($(e.target).closest(".co-context-menu-item, .co-actions-menu-btn").length) return;
-        
         menu.remove();
         $(document).off("click touchstart", closeMenu);
     };
 
     setTimeout(() => {
         $(document).on("click touchstart", closeMenu);
-    }, 100);
+    }, 400);
 }
 
 function showEditDialog(chatElement, chatData, type, currentValue) {
@@ -798,49 +806,39 @@ function buildFolderUI() {
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
                     chat.element.append($chatImage);
 
-                    // ==================== НОВАЯ КНОПКА ТРЁХ ТОЧЕК ====================
-                    const $actionsMenuBtn = $(`
-                        <div class="co-actions-menu-btn" title="Действия">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
-                        </div>
-                    `);
+                   const $actionsMenuBtn = $(`
+                       <div class="co-actions-menu-btn" title="Действия">
+                           <i class="fa-solid fa-ellipsis-vertical"></i>
+                       </div>
+                   `);
 
-                    chat.element.append($actionsMenuBtn);
+                   chat.element.append($actionsMenuBtn);
 
-                    $actionsMenuBtn.css({
-                        'touch-action': 'manipulation',
-                        'cursor': 'pointer',
-                        '-webkit-tap-highlight-color': 'transparent'
-                    });
+                   $actionsMenuBtn.css({
+                       'touch-action': 'manipulation',
+                       'cursor': 'pointer',
+                       '-webkit-tap-highlight-color': 'transparent'
+                   });
 
-                    // ←←← САМЫЙ НОВЫЙ ОБРАБОТЧИК (решает проблему на телефоне)
-                    const showMenuHandler = (e) => {
-                        e.stopImmediatePropagation();
-                        e.preventDefault();
+                   const showMenuHandler = (e) => {
+                       e.stopImmediatePropagation();
+                       e.preventDefault();
 
-                        if (window.coLastMenuTime && Date.now() - window.coLastMenuTime < 300) return;
-                        window.coLastMenuTime = Date.now();
+    // Защита от двойного срабатывания (touchend + click)
+                   if (window.coLastMenuTime && Date.now() - window.coLastMenuTime < 300) {
+                       return;
+                   }
+                   window.coLastMenuTime = Date.now();
 
-                        // Временно отключаем draggable, чтобы не начинался drag
-                        const $wrapper = chat.element.closest('.co-chat-wrapper');
-                        $wrapper.attr('draggable', 'false');
-                        setTimeout(() => $wrapper.attr('draggable', 'true'), 800);
+                   showContextMenu($wrapper, chat, e);
+                   return false;
+                   };
 
-                        showContextMenu($wrapper, chat, e);
-                        return false;
-                    };
-
-                    $actionsMenuBtn.on("touchstart click", showMenuHandler);
-                    // ================================================================
+// Работает идеально и на телефоне, и на ПК
+                    $actionsMenuBtn.on("click touchend", showMenuHandler);
 
                     $wrapper.on("dragstart", function(e) {
-                        if ($(e.target).closest('.co-actions-menu-btn').length > 0) {
-                            e.preventDefault();
-                            return false;
-                        }
-
                         if (sortMode !== 'custom') return e.preventDefault(); 
-
                         e.originalEvent.dataTransfer.setData("text/plain", chat.dataFile);
                         e.originalEvent.dataTransfer.effectAllowed = "move";
                         $(this).addClass("co-dragging");
