@@ -3,10 +3,26 @@
 Ультимативный менеджер чатов для SillyTavern. Наведите идеальный порядок в ваших переписках: группируйте чаты по персонажам, добавляйте теги, заметки, кастомные имена и раскрашивайте папки!
 
 ## 📸 Интерфейс и Настройки
-Меню настроек <img width="475" height="520" alt="изображение" src="https://github.com/user-attachments/assets/14fd4c9e-3291-43cc-8dbb-f599babf6568" />
+* **Интерфейс чатов**
+<img width="1198" height="915" alt="изображение" src="https://github.com/user-attachments/assets/c585fae9-8d52-44e2-9fab-1f70313daa21" />
 
-Интерфейс чатов <img width="922" height="830" alt="Снимок экрана от 2026-03-16 23-22-25" src="https://github.com/user-attachments/assets/8ce2dffa-f47a-4a72-8ff4-c8a7d82ea750" />
+* **Настройки папки**
+<img width="410" height="453" alt="изображение" src="https://github.com/user-attachments/assets/b0dbabd2-2baa-4bb9-b10d-b59fd413999f" />
 
+* **Настройки расширения**
+<img width="531" height="823" alt="изображение" src="https://github.com/user-attachments/assets/173b6714-8874-4e0a-a331-34d377f47d32" />
+
+* **Интерфейс на мобильном устройстве**
+<img width="479" height="506" alt="изображение" src="https://github.com/user-attachments/assets/5d933e9f-719a-416f-b0f6-7853954e5563" />
+
+
+<details>
+  <summary><b>🚀 Что нового в версии 1.1</b></summary>
+
+ * Теперь фоны папок поддерживают фоны URL и с устройства, а не только цвет
+ * Переработано окно настроек каждой отдельной папки
+ * Появилось два режима: пк и мобильные устройства
+</details>
 
 ## ✨ Главные функции
 
