@@ -667,3 +667,113 @@
         font-size: 1.1em !important;
     }
 }
+
+/* Адаптация интерфейса папок для мобильных */
+@media (max-width: 768px) {
+    #co-folder-view {
+        gap: 8px !important;
+        padding: 4px !important;
+    }
+    
+    .co-folder-header {
+        padding: 8px 10px !important;
+        gap: 8px !important;
+    }
+    
+    .co-folder-avatar {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    
+    .co-folder-name {
+        font-size: 0.9em !important;
+    }
+    
+    .co-folder-count {
+        font-size: 0.7em !important;
+        padding: 2px 6px !important;
+    }
+    
+    .co-folder-controls {
+        gap: 8px !important;
+    }
+    
+    .co-folder-controls i {
+        font-size: 0.8em !important;
+    }
+    
+    .co-folder-chats {
+        max-height: 50vh !important;
+    }
+    
+    /* Адаптация чатов */
+    #co-folder-view .recentChat {
+        padding: 6px 8px !important;
+        min-height: 50px !important;
+    }
+    
+    #co-folder-view .recentChat .avatar {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+    }
+    
+    #co-folder-view .recentChat .recentChatInfo {
+        padding-left: 6px !important;
+        padding-right: 40px !important;
+    }
+    
+    .co-chat-custom-image {
+        width: 36px !important;
+        height: 36px !important;
+        right: 8px !important;
+    }
+    
+    .co-note-preview {
+        right: 55px !important;
+        max-width: 20% !important;
+        font-size: 0.7em !important;
+    }
+    
+    .co-actions-menu-btn {
+        width: 24px !important;
+        height: 24px !important;
+        right: 8px !important;
+    }
+    
+    .co-stats-inline {
+        margin-left: 4px !important;
+        gap: 4px !important;
+    }
+    
+    .co-msg-count, .co-file-size {
+        padding: 0px 4px !important;
+        font-size: 0.7em !important;
+    }
+    
+    .co-tag {
+        font-size: 0.65em !important;
+        padding: 1px 4px !important;
+    }
+    
+    /* Адаптация панели массовых действий */
+    #co-bulk-panel {
+        padding: 6px 10px !important;
+        flex-wrap: wrap !important;
+    }
+    
+    .co-bulk-count-text {
+        font-size: 0.75em !important;
+    }
+    
+    #co-bulk-tag-input {
+        font-size: 0.75em !important;
+        padding: 4px 6px !important;
+    }
+    
+    .co-bulk-btn {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 0.8em !important;
+    }
+}
