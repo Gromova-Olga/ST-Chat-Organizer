@@ -315,6 +315,9 @@ function removeFolderUI() {
     $(".recentChatList").show();
 }
 
+// Глобальный флаг: блокирует closeMenu сразу после открытия меню через тач
+let _menuOpenedByTouch = false;
+
 function showContextMenu(chatElement, chatData) {
     const existingMenu = $(".co-actions-context-menu");
     if (existingMenu.length) {
@@ -383,41 +386,36 @@ function showContextMenu(chatElement, chatData) {
     
     menu.addClass("show");
 
-    // Флаг: меню только что открылось — первый внешний клик/тап игнорируем,
-    // иначе то же самое касание которым открыли меню сразу же его закроет.
-    let menuJustOpened = true;
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            menuJustOpened = false;
-        });
-    });
-
     const closeMenu = (e) => {
-        if (menuJustOpened) return;
+        // Если меню открыто тачем — пропускаем первый touchstart/click который его открыл
+        if (_menuOpenedByTouch) {
+            _menuOpenedByTouch = false;
+            return;
+        }
         if ($(e.target).closest(".co-context-menu-item").length) return;
         if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
             menu.remove();
-            $(document).off("click touchend", closeMenu);
+            $(document).off("click touchstart", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
-    
+
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             menu.remove();
-            $(document).off("click touchend", closeMenu);
+            $(document).off("click touchstart", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
-    
-    $(document).on("click touchend", closeMenu);
+
+    $(document).on("click touchstart", closeMenu);
     $(document).on("keydown", escapeHandler);
 
-    menu.find("[data-action]").on("click touchend", (e) => {
+    menu.find("[data-action]").on("click touchstart", (e) => {
         e.stopPropagation();
         e.preventDefault();
         const action = $(e.currentTarget).data("action");
-        
+
         if (action === "rename") showEditDialog(chatElement, chatData, "rename", displayName);
         else if (action === "tag") showEditDialog(chatElement, chatData, "tag", tagsStr);
         else if (action === "note") showEditDialog(chatElement, chatData, "note", note);
@@ -434,7 +432,7 @@ function showContextMenu(chatElement, chatData) {
             else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
         }
         menu.remove();
-        $(document).off("click touchend", closeMenu);
+        $(document).off("click touchstart", closeMenu);
     });
 }
 
@@ -858,22 +856,16 @@ function buildFolderUI() {
                         'touch-action': 'manipulation',
                         'cursor': 'pointer'
                     });
-                    
-                    // Объединяем обработчики для мобильных и десктопа.
-                    // Используем touchend (не touchstart и не click-после-touch),
-                    // чтобы событие не конфликтовало с closeMenu на document.
-                    let lastTouchEnd = 0;
-                    $actionsMenuBtn.on("touchend", function(e) {
+
+                    $actionsMenuBtn.on("touchstart", function(e) {
                         e.stopPropagation();
                         e.preventDefault();
-                        lastTouchEnd = Date.now();
+                        _menuOpenedByTouch = true; // закрыватель пропустит этот же touchstart
                         showContextMenu($wrapper, chat);
                     });
-                    // click срабатывает после touchend на ~300ms — пропускаем его
                     $actionsMenuBtn.on("click", function(e) {
                         e.stopPropagation();
                         e.preventDefault();
-                        if (Date.now() - lastTouchEnd < 600) return;
                         showContextMenu($wrapper, chat);
                     });
 
