@@ -386,23 +386,37 @@ function showContextMenu(chatElement, chatData) {
     menu.addClass("show");
 
     const closeMenu = (e) => {
-        if ($(e.target).closest(".co-context-menu-item").length) {
+        // Игнорируем клики внутри самого меню
+        if ($(e.target).closest(".co-actions-context-menu").length) {
             return;
         }
-        if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
+        // Игнорируем клики по кнопкам открытия (и десктоп, и мобильная)
+        if ($(e.target).closest(".co-actions-menu-btn, .co-mobile-open-btn").length) {
+            return;
+        }
+        // Защита от фантомного клика после долгого нажатия
+        if (window.coIgnoreNextClose) {
+            return;
+        }
+
+        menu.remove();
+        // Используем pointerdown для надежного закрытия по тапу в пустоту на iOS/Android
+        $(document).off("click pointerdown", closeMenu);
+        $(document).off("keydown", escapeHandler);
+    };
+
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
             menu.remove();
-            $(document).off("click", closeMenu);
+            $(document).off("click pointerdown", closeMenu);
             $(document).off("keydown", escapeHandler);
         }
     };
     
-    const escapeHandler = (e) => {
-        if (e.key === 'Escape') {
-            menu.remove();
-            $(document).off("click", closeMenu);
-            $(document).off("keydown", escapeHandler);
-        }
-    };
+    setTimeout(() => {
+        $(document).on("click pointerdown", closeMenu);
+        $(document).on("keydown", escapeHandler);
+    }, 100);
     
     setTimeout(() => {
         $(document).on("click", closeMenu);
@@ -856,12 +870,7 @@ function buildFolderUI() {
 
                     if (!isMobileDevice || mobileMode === 'desktop') {
                         // РЕЖИМ ПК: кнопка три точки
-                        $actionsMenuBtn.on('pointerdown', function(e) {
-                            e.stopImmediatePropagation();
-                            e.stopPropagation();
-                            e.preventDefault();
-                        });
-                        $actionsMenuBtn.on('touchstart', function(e) {
+                        $actionsMenuBtn.on('pointerdown touchstart', function(e) {
                             e.stopImmediatePropagation();
                             e.stopPropagation();
                             e.preventDefault();
@@ -876,31 +885,57 @@ function buildFolderUI() {
                         // РЕЖИМ ТЕЛЕФОН: долгое нажатие на чат
                         $actionsMenuBtn.hide();
                         let longPressTimer = null;
+                        let isLongPressed = false;
+                        
                         chat.element.on('touchstart', function(e) {
+                            isLongPressed = false;
                             longPressTimer = setTimeout(() => {
                                 longPressTimer = null;
+                                isLongPressed = true;
+                                window.coIgnoreNextClose = true; // Блокируем следующий фантомный клик
                                 showContextMenu($wrapper, chat);
-                            }, 500);
+                            }, 400); // 400мс ощущается чуть отзывчивее
                         });
-                        chat.element.on('touchend touchcancel touchmove', function() {
-                            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+                        
+                        chat.element.on('touchend touchcancel', function() {
+                            if (longPressTimer) { 
+                                clearTimeout(longPressTimer); 
+                                longPressTimer = null; 
+                            }
+                            if (isLongPressed) {
+                                // Снимаем блокировку через полсекунды после того как отпустили палец
+                                setTimeout(() => { window.coIgnoreNextClose = false; }, 500);
+                                isLongPressed = false;
+                            }
+                        });
+
+                        // Отменяем меню, если пользователь начал свайпать (скроллить) чаты
+                        chat.element.on('touchmove', function() {
+                            if (longPressTimer) { 
+                                clearTimeout(longPressTimer); 
+                                longPressTimer = null; 
+                            }
                         });
                     } else if (mobileMode === 'button') {
                         // РЕЖИМ ТЕЛЕФОН: отдельная кнопка снизу
                         $actionsMenuBtn.hide();
                         const $mobileBtn = $('<div class="co-mobile-open-btn">⋯</div>');
                         $wrapper.append($mobileBtn);
-                        $mobileBtn.on('touchstart', function(e) {
+                        
+                        $mobileBtn.on('pointerdown touchstart', function(e) {
                             e.stopImmediatePropagation();
                             e.stopPropagation();
                             e.preventDefault();
-                            showContextMenu($wrapper, chat);
+                            // Защита от двойного открытия
+                            if ($(".co-actions-context-menu").length === 0) {
+                                showContextMenu($wrapper, chat);
+                            }
                         });
+                        
                         $mobileBtn.on('click', function(e) {
                             e.stopImmediatePropagation();
                             e.stopPropagation();
                             e.preventDefault();
-                            showContextMenu($wrapper, chat);
                         });
                     }
 
