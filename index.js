@@ -315,7 +315,12 @@ function removeFolderUI() {
     $(".recentChatList").show();
 }
 
-function showContextMenu(chatElement, chatData) {
+function showContextMenu(chatElement, chatData, event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
     const existingMenu = $(".co-actions-context-menu");
     if (existingMenu.length) {
         existingMenu.remove();
@@ -387,11 +392,12 @@ function showContextMenu(chatElement, chatData) {
         if ($(e.target).closest(".co-context-menu-item").length) {
             return;
         }
-        if (!menu.is(e.target) && !menu.has(e.target).length && !$(e.target).closest(".co-actions-menu-btn").length) {
-            menu.remove();
-            $(document).off("click touchstart", closeMenu);
-            $(document).off("keydown", escapeHandler);
+        if ($(e.target).closest(".co-actions-menu-btn").length) {
+            return;
         }
+        menu.remove();
+        $(document).off("click touchstart", closeMenu);
+        $(document).off("keydown", escapeHandler);
     };
     
     const escapeHandler = (e) => {
@@ -407,7 +413,7 @@ function showContextMenu(chatElement, chatData) {
         $(document).on("keydown", escapeHandler);
     }, 100);
 
-    menu.find("[data-action]").on("click touchstart", (e) => {
+    menu.find("[data-action]").off("click touchstart").on("click touchstart", (e) => {
         e.stopPropagation();
         e.preventDefault();
         const action = $(e.currentTarget).data("action");
@@ -847,17 +853,15 @@ function buildFolderUI() {
 
                     chat.element.append($actionsMenuBtn);
                     
-                    // Увеличиваем зону касания для мобильных
                     $actionsMenuBtn.css({
                         'touch-action': 'manipulation',
                         'cursor': 'pointer'
                     });
                     
-                    // Объединяем обработчики для мобильных и десктопа
                     const showMenuHandler = (e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        showContextMenu($wrapper, chat);
+                        showContextMenu($wrapper, chat, e);
                         return false;
                     };
                     
