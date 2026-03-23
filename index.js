@@ -320,8 +320,8 @@ function showContextMenu(chatElement, chatData, event) {
         event.stopImmediatePropagation();
         event.preventDefault();
     }
-    
-    // ВСЕГДА закрываем предыдущее меню и создаём новое (было багом)
+
+    // Всегда закрываем старое меню
     $(".co-actions-context-menu").remove();
 
     const s = extension_settings[extensionName];
@@ -356,9 +356,9 @@ function showContextMenu(chatElement, chatData, event) {
     `);
 
     $("body").append(menu);
-    
+
     const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
+
     if (isMobile) {
         menu.css({
             position: 'fixed',
@@ -369,7 +369,7 @@ function showContextMenu(chatElement, chatData, event) {
             transform: 'none',
             width: 'auto',
             maxWidth: 'none',
-            zIndex: '1000000'
+            zIndex: '2147483647'
         });
     } else {
         const btn = chatElement.find(".co-actions-menu-btn");
@@ -380,24 +380,23 @@ function showContextMenu(chatElement, chatData, event) {
                 top: btnRect.top - 10,
                 right: window.innerWidth - btnRect.left + 10,
                 transform: 'translateY(-100%)',
-                zIndex: '1000000'
+                zIndex: '2147483647'
             });
         }
     }
-    
+
     menu.addClass("show");
 
-    // === Закрытие по клику вне меню ===
+    // Закрытие по тапу вне меню (увеличенная задержка специально для телефона)
     const closeMenu = (e) => {
-        if ($(e.target).closest(".co-context-menu-item").length) return;
-        if ($(e.target).closest(".co-actions-menu-btn").length) return;
+        if ($(e.target).closest(".co-context-menu-item, .co-actions-menu-btn").length) return;
         menu.remove();
         $(document).off("click touchstart", closeMenu);
     };
-    
+
     setTimeout(() => {
         $(document).on("click touchstart", closeMenu);
-    }, 250); // увеличил задержку специально для мобильных
+    }, 400);
 }
 
 function showEditDialog(chatElement, chatData, type, currentValue) {
@@ -807,30 +806,36 @@ function buildFolderUI() {
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
                     chat.element.append($chatImage);
 
-                    const $actionsMenuBtn = $(`
-                        <div class="co-actions-menu-btn" title="Действия">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
-                        </div>
-                    `);
+                   const $actionsMenuBtn = $(`
+                       <div class="co-actions-menu-btn" title="Действия">
+                           <i class="fa-solid fa-ellipsis-vertical"></i>
+                       </div>
+                   `);
 
-                    chat.element.append($actionsMenuBtn);
+                   chat.element.append($actionsMenuBtn);
 
-                    $actionsMenuBtn.css({
-                        'touch-action': 'manipulation',
-                        'cursor': 'pointer',
-                        '-webkit-tap-highlight-color': 'transparent'
-                    });
+                   $actionsMenuBtn.css({
+                       'touch-action': 'manipulation',
+                       'cursor': 'pointer',
+                       '-webkit-tap-highlight-color': 'transparent'
+                   });
 
-// Только click — работает и на ПК, и на телефоне
-                    const showMenuHandler = (e) => {
-                        e.stopImmediatePropagation();
-                        e.stopPropagation();
-                        e.preventDefault();
-                        showContextMenu($wrapper, chat, e);
-                        return false;
-                    };
+                   const showMenuHandler = (e) => {
+                       e.stopImmediatePropagation();
+                       e.preventDefault();
 
-                    $actionsMenuBtn.on("click", showMenuHandler);
+    // Защита от двойного срабатывания (touchend + click)
+                   if (window.coLastMenuTime && Date.now() - window.coLastMenuTime < 300) {
+                       return;
+                   }
+                   window.coLastMenuTime = Date.now();
+
+                   showContextMenu($wrapper, chat, e);
+                   return false;
+                   };
+
+// Работает идеально и на телефоне, и на ПК
+                    $actionsMenuBtn.on("click touchend", showMenuHandler);
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
