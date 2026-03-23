@@ -853,11 +853,16 @@ function buildFolderUI() {
                         'cursor': 'pointer'
                     });
                     
-                    // pointerdown срабатывает ровно один раз (тач и мышь) — без дубликата
-                    $actionsMenuBtn.on("pointerdown", function(e) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        showContextMenu($wrapper, chat);
+                    // Объединяем обработчики для мобильных и десктопа
+                    // Обрабатываем нажатие на .recentChat:
+                    // если тап попал в кнопку — открываем меню, иначе — открываем чат
+                    chat.element.on("click", function(e) {
+                        const $btn = $(e.target).closest(".co-actions-menu-btn");
+                        if ($btn.length) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            showContextMenu($wrapper, chat);
+                        }
                     });
 
                     $wrapper.on("dragstart", function(e) {
