@@ -29,7 +29,7 @@ const defaultSettings = {
     chatBorderWidth: 0,
     chatBorderColor: "#444444",
     chatBorderStyle: "solid",
-    mobileMode: "longpress"
+    mobileMode: "mobile"
 };
 
 function loadSettings() {
@@ -61,7 +61,7 @@ function loadSettings() {
     $("#co-chat-border-width-val").text((s.chatBorderWidth ?? 0) + "px");
     $("#co-chat-border-color").val(s.chatBorderColor ?? "#444444");
     $("#co-chat-border-style").val(s.chatBorderStyle ?? "solid");
-    $("#co-mobile-mode").val(s.mobileMode ?? "longpress");
+    $("#co-mobile-mode").val(s.mobileMode ?? "mobile");
     applyColors();
     console.log(`[${extensionName}] Settings loaded, enabled: ${s.enabled}`);
 }
@@ -126,8 +126,6 @@ function updateChatBorders() {
     
     $("#co-chat-border-style-dynamic").remove();
     $("head").append(`<style id="co-chat-border-style-dynamic">${style}</style>`);
-    
-    console.log(`[${extensionName}] Chat borders: radius=${borderRadius}px, width=${borderWidth}px`);
 }
 
 function onEnabledChange(event) {
@@ -318,8 +316,11 @@ function removeFolderUI() {
 }
 
 function showContextMenu(chatElement, chatData) {
-    // Удаляем старые меню и бэкдропы, если есть
-    $(".co-actions-context-menu, .co-menu-backdrop").remove();
+    const existingMenu = $(".co-actions-context-menu");
+    if (existingMenu.length) {
+        existingMenu.remove();
+        return;
+    }
 
     const s = extension_settings[extensionName];
     const note = s.notes?.[chatData.dataFile] || "";
@@ -327,11 +328,8 @@ function showContextMenu(chatElement, chatData) {
     const isPinned = s.pinned?.[chatData.dataFile];
     const displayName = s.chatNames?.[chatData.dataFile] || chatData.originalName;
 
-    // СОЗДАЕМ НЕВИДИМЫЙ ФОН для перехвата кликов мимо меню
-    const backdrop = $('<div class="co-menu-backdrop" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: transparent; touch-action: none;"></div>');
-
     const menu = $(`
-        <div class="co-actions-context-menu" style="z-index: 10000;">
+        <div class="co-actions-context-menu">
             <div class="co-context-menu-item" data-action="rename">
                 <i class="fa-solid fa-pen"></i> <span>Переименовать</span>
             </div>
@@ -355,54 +353,40 @@ function showContextMenu(chatElement, chatData) {
         </div>
     `);
 
-    $("body").append(backdrop).append(menu);
+    $("body").append(menu);
     
-    const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
-    if (isMobile) {
+    const btn = chatElement.find(".co-actions-menu-btn");
+    if (btn.length) {
+        const btnRect = btn[0].getBoundingClientRect();
         menu.css({
             position: 'fixed',
-            bottom: '20px',
-            left: '20px',
-            right: '20px',
-            top: 'auto',
-            transform: 'none',
-            width: 'auto',
-            maxWidth: 'none'
+            top: btnRect.top - 10,
+            right: window.innerWidth - btnRect.left + 10,
+            transform: 'translateY(-100%)'
         });
-    } else {
-        const btn = chatElement.find(".co-actions-menu-btn");
-        if (btn.length) {
-            const btnRect = btn[0].getBoundingClientRect();
-            menu.css({
-                position: 'fixed',
-                top: btnRect.top - 10,
-                right: window.innerWidth - btnRect.left + 10,
-                transform: 'translateY(-100%)'
-            });
-        }
     }
     
     menu.addClass("show");
 
-    // Функция закрытия
     const closeMenu = (e) => {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        if ($(e.target).closest(".co-actions-context-menu, .co-actions-menu-btn").length) return;
         menu.remove();
-        backdrop.remove();
+        $(document).off("click pointerdown", closeMenu);
         $(document).off("keydown", escapeHandler);
     };
     
     const escapeHandler = (e) => {
-        if (e.key === 'Escape') closeMenu();
+        if (e.key === 'Escape') {
+            menu.remove();
+            $(document).off("click pointerdown", closeMenu);
+            $(document).off("keydown", escapeHandler);
+        }
     };
-
-    // Вешаем закрытие ТОЛЬКО на невидимый бэкдроп
-    backdrop.on("pointerdown touchstart click", closeMenu);
-    $(document).on("keydown", escapeHandler);
+    
+    setTimeout(() => {
+        $(document).on("click pointerdown", closeMenu);
+        $(document).on("keydown", escapeHandler);
+    }, 100);
 
     menu.find("[data-action]").on("click", (e) => {
         e.stopPropagation();
@@ -424,8 +408,8 @@ function showContextMenu(chatElement, chatData) {
             if (target.length) target.click();
             else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
         }
-        
-        closeMenu(); // Закрываем меню и бэкдроп после действия
+        menu.remove();
+        $(document).off("click pointerdown", closeMenu);
     });
 }
 
@@ -524,7 +508,6 @@ function showFolderSettingsModal(charName, currentImage, currentSettings) {
                     <button id="co-upload-bg" class="menu_button" style="padding: 4px 12px;">📁 Загрузить</button>
                     <button id="co-clear-bg" class="menu_button" style="padding: 4px 12px;">✖</button>
                 </div>
-                <small style="opacity: 0.6; display: block; margin-bottom: 12px;">Картинка будет фоном всей папки</small>
                 
                 <label>Цвет фона:</label>
                 <div class="co-folder-color-row">
@@ -532,7 +515,6 @@ function showFolderSettingsModal(charName, currentImage, currentSettings) {
                     <button id="co-reset-color" class="menu_button" style="padding: 4px 8px;">Сбросить цвет</button>
                     <button id="co-remove-color" class="menu_button" style="padding: 4px 8px;">Убрать цвет</button>
                 </div>
-                <small style="opacity: 0.6; display: block; margin-bottom: 12px;">Если убрать цвет - будет только картинка</small>
                 
                 <label>Прозрачность фона:</label>
                 <div class="co-opacity-slider">
@@ -540,7 +522,6 @@ function showFolderSettingsModal(charName, currentImage, currentSettings) {
                     <span id="co-opacity-value">${currentOpacity}%</span>
                     <button id="co-reset-opacity" class="menu_button" style="padding: 4px 8px;">Сбросить</button>
                 </div>
-                <small style="opacity: 0.6; display: block; margin-bottom: 12px;">Прозрачность применяется к цвету и картинке</small>
                 
                 <label>Аватар папки (иконка):</label>
                 <div style="display: flex; gap: 8px; margin-bottom: 12px;">
@@ -578,49 +559,38 @@ function showFolderSettingsModal(charName, currentImage, currentSettings) {
         e.preventDefault();
         e.stopPropagation();
         const base64 = await uploadImageFromPC();
-        if (base64) {
-            bgImageInput.val(base64);
-            if (typeof toastr !== 'undefined') toastr.success("Изображение загружено!", "Chat Organizer");
-        }
+        if (base64) bgImageInput.val(base64);
     });
     
     modal.find("#co-clear-bg").on("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         bgImageInput.val("");
-        if (typeof toastr !== 'undefined') toastr.info("Фоновое изображение удалено", "Chat Organizer");
     });
     
     modal.find("#co-upload-avatar").on("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
         const base64 = await uploadImageFromPC();
-        if (base64) {
-            avatarImageInput.val(base64);
-            if (typeof toastr !== 'undefined') toastr.success("Аватар загружен!", "Chat Organizer");
-        }
+        if (base64) avatarImageInput.val(base64);
     });
     
     modal.find("#co-clear-avatar").on("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         avatarImageInput.val("");
-        if (typeof toastr !== 'undefined') toastr.info("Аватар удален", "Chat Organizer");
     });
     
     modal.find("#co-reset-color").on("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const globalColor = s.folderBg || "#111111";
-        colorInput.val(globalColor);
-        if (typeof toastr !== 'undefined') toastr.info("Цвет сброшен к глобальному", "Chat Organizer", { timeOut: 1500 });
+        colorInput.val(s.folderBg || "#111111");
     });
     
     modal.find("#co-remove-color").on("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         colorInput.val("");
-        if (typeof toastr !== 'undefined') toastr.info("Цвет убран, будет только картинка", "Chat Organizer", { timeOut: 1500 });
     });
     
     modal.find("#co-reset-opacity").on("click", (e) => {
@@ -629,7 +599,6 @@ function showFolderSettingsModal(charName, currentImage, currentSettings) {
         const defaultOpacity = s.bgOpacity ?? 5;
         opacitySlider.val(defaultOpacity);
         opacityValue.text(defaultOpacity + "%");
-        if (typeof toastr !== 'undefined') toastr.info("Прозрачность сброшена к глобальной", "Chat Organizer", { timeOut: 1500 });
     });
     
     modal.find(".co-modal-cancel").on("click", () => modal.remove());
@@ -643,43 +612,94 @@ function showFolderSettingsModal(charName, currentImage, currentSettings) {
         const globalColor = s.folderBg || "#111111";
         const globalOpacity = s.bgOpacity ?? 5;
         
-        const isColorEmpty = !newColor || newColor === "";
-        const isColorGlobal = newColor === globalColor;
-        const isOpacityDefault = newOpacity === globalOpacity;
-        
         if (!s.folderBgImages) s.folderBgImages = {};
         s.folderBgImages[charName] = newBgImage;
         
         if (!s.folderColors) s.folderColors = {};
-        if (isColorEmpty) {
-            delete s.folderColors[charName];
-        } else if (isColorGlobal) {
-            delete s.folderColors[charName];
-        } else {
-            s.folderColors[charName] = newColor;
-        }
+        if (!newColor || newColor === "" || newColor === globalColor) delete s.folderColors[charName];
+        else s.folderColors[charName] = newColor;
         
         if (!s.folderOpacity) s.folderOpacity = {};
-        if (isOpacityDefault) {
-            delete s.folderOpacity[charName];
-        } else {
-            s.folderOpacity[charName] = newOpacity;
-        }
+        if (newOpacity === globalOpacity) delete s.folderOpacity[charName];
+        else s.folderOpacity[charName] = newOpacity;
         
         saveFolderImage(charName, newAvatarImage);
         saveFolderSettings(charName, { hideAvatar });
         
         modal.remove();
         buildFolderUI();
+    });
+}
+
+function showMobileFolderEditor(charName, chats) {
+    const s = extension_settings[extensionName];
+    
+    const chatsListHtml = chats.map(chat => {
+        const displayName = s.chatNames?.[chat.dataFile] || chat.originalName;
+        const isPinned = s.pinned?.[chat.dataFile];
+        return `
+            <div class="co-mobile-editor-row" data-file="${chat.dataFile}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--SmartThemeBorderColor); background: var(--white10a); margin-bottom: 6px; border-radius: 8px;">
+                <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; font-size: 0.95em;">
+                    ${isPinned ? '<i class="fa-solid fa-thumbtack" style="color: var(--co-note-color, #f0c060); margin-right: 6px;"></i>' : ''}
+                    ${displayName}
+                </div>
+                <div class="co-mobile-editor-actions" style="display: flex; gap: 14px; font-size: 1.1em; color: var(--SmartThemeBodyColor); opacity: 0.8;">
+                    <i class="fa-solid fa-pen action-btn" data-action="rename" title="Переименовать" style="cursor: pointer;"></i>
+                    <i class="fa-solid fa-tags action-btn" data-action="tag" title="Теги" style="cursor: pointer;"></i>
+                    <i class="fa-solid fa-note-sticky action-btn" data-action="note" title="Заметка" style="cursor: pointer;"></i>
+                    <i class="fa-solid fa-thumbtack action-btn" data-action="pin" title="Закрепить" style="cursor: pointer;"></i>
+                    <i class="fa-solid fa-file-signature action-btn" data-action="native-rename" title="Системное имя" style="cursor: pointer;"></i>
+                    <i class="fa-solid fa-trash action-btn" data-action="delete" title="Удалить" style="cursor: pointer; color: #ff6666;"></i>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const modal = $(`
+        <div class="co-folder-modal-overlay co-mobile-manager-overlay">
+            <div class="co-folder-modal" style="width: 95%; max-width: 500px; max-height: 85vh; display: flex; flex-direction: column; padding: 16px;">
+                <h3 style="margin-top: 0;">Управление: ${charName.replace(/</g, '&lt;')}</h3>
+                <div class="co-mobile-editor-list" style="overflow-y: auto; flex: 1; padding-right: 4px;">
+                    ${chatsListHtml}
+                </div>
+                <div class="co-folder-modal-buttons" style="margin-top: 16px; justify-content: center;">
+                    <button class="co-modal-close" style="width: 100%; padding: 12px; background: var(--white20a); font-size: 1em;">Готово</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    $("body").append(modal);
+
+    modal.find('.co-modal-close').on('click', () => {
+        modal.remove();
+        buildFolderUI(); 
+    });
+
+    modal.find('.action-btn').on('click', function(e) {
+        const action = $(this).data('action');
+        const file = $(this).closest('.co-mobile-editor-row').data('file');
+        const chatData = chats.find(c => c.dataFile === file);
         
-        if (typeof toastr !== 'undefined') {
-            if (isColorEmpty) {
-                toastr.success("Цвет убран, используется только картинка", "Chat Organizer");
-            } else if (isColorGlobal && isOpacityDefault) {
-                toastr.success("Настройки сброшены к глобальным", "Chat Organizer");
-            } else {
-                toastr.success("Настройки сохранены", "Chat Organizer");
-            }
+        if (!chatData) return;
+
+        const note = s.notes?.[chatData.dataFile] || "";
+        const tagsStr = s.tags?.[chatData.dataFile] || "";
+        const displayName = s.chatNames?.[chatData.dataFile] || chatData.originalName;
+
+        if (action === "rename") showEditDialog(chatData.element, chatData, "rename", displayName);
+        else if (action === "tag") showEditDialog(chatData.element, chatData, "tag", tagsStr);
+        else if (action === "note") showEditDialog(chatData.element, chatData, "note", note);
+        else if (action === "pin") {
+            togglePin(chatData.dataFile);
+            modal.remove(); 
+            showMobileFolderEditor(charName, chats); 
+        } else if (action === "native-rename") {
+            const target = chatData.element.find('.chat_edit, .edit_chat, .ch_edit, [title="Edit chat name"], .chatActions .fa-pen-to-square').first();
+            if (target.length) { target.click(); modal.remove(); }
+        } else if (action === "delete") {
+            const target = chatData.element.find('.delete_chat, .chat_delete, .ch_del, [title="Delete chat"], .chatActions .fa-trash').first();
+            if (target.length) { target.click(); modal.remove(); }
         }
     });
 }
@@ -728,6 +748,10 @@ function buildFolderUI() {
             `);
             $container.append($bulkPanel);
 
+            const isMobileDevice = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const mobileMode = s.mobileMode || 'mobile';
+            const isMobileMode = isMobileDevice && (mobileMode === 'mobile');
+
             Object.entries(grouped).forEach(([charName, chats]) => {
                 const count = chats.length;
                 const existingImg = chats[0].element.find("img").attr("src") || "";
@@ -744,17 +768,11 @@ function buildFolderUI() {
                 const folderOpacityValue = s.folderOpacity?.[charName] !== undefined ? s.folderOpacity[charName] : (s.bgOpacity ?? 5);
                 const opacity = folderOpacityValue / 100;
                 
-                let fBg;
-                if (hasColor) {
-                    const rgb = hexToRgb(folderColor);
-                    fBg = `rgba(${rgb},${opacity})`;
-                } else {
-                    fBg = `rgba(0,0,0,0)`;
-                }
-                
+                let fBg = hasColor ? `rgba(${hexToRgb(folderColor)},${opacity})` : `rgba(0,0,0,0)`;
                 const fBorder = s.folderColors?.[charName] ? folderColor : s.borderColor;
-
                 const folderBgImage = s.folderBgImages?.[charName] || "";
+                
+                const mobileEditBtnHtml = isMobileMode ? `<i class="fa-solid fa-list-check co-mobile-edit-btn" title="Управление чатами" style="cursor: pointer; margin-right: 4px;"></i>` : '';
 
                 const $folder = $(`
                     <div class="co-folder" style="border-color: ${fBorder} !important; background: ${fBg} !important; position: relative; overflow: hidden;">
@@ -764,6 +782,7 @@ function buildFolderUI() {
                             <span class="co-folder-name">${charName.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
                             <span class="co-folder-count">${count}</span>
                             <div class="co-folder-controls">
+                                ${mobileEditBtnHtml}
                                 <i class="fa-solid ${sortIcon} co-sort-btn" title="Сортировка: ${sortTitle}"></i>
                                 <i class="fa-solid fa-gear co-folder-settings-btn" title="Настройки папки"></i>
                                 <div class="co-folder-arrow fa-solid fa-chevron-down"></div>
@@ -774,6 +793,13 @@ function buildFolderUI() {
                 `);
 
                 const $chatsContainer = $folder.find(".co-folder-chats");
+
+                if (isMobileMode) {
+                    $folder.find(".co-mobile-edit-btn").on("click", (e) => {
+                        e.stopPropagation();
+                        showMobileFolderEditor(charName, chats);
+                    });
+                }
 
                 $folder.find(".co-sort-btn").on("click", (e) => {
                     e.stopPropagation();
@@ -816,9 +842,7 @@ function buildFolderUI() {
                         const sizeMatch = fullText.match(/([\d.]+\s*[kKmMgG][bB])/i);
                         if (sizeMatch) fileSizeStr = sizeMatch[1];
                         const msgMatch = fullText.match(/(\d+)\s*(?:\||msgs|messages)/i);
-                        if (msgMatch) {
-                            msgCountStr = msgMatch[1];
-                        }
+                        if (msgMatch) msgCountStr = msgMatch[1];
                     }
 
                     const statsHtml = `<span class="co-msg-count" title="Сообщения"><i class="fa-solid fa-message"></i> ${msgCountStr}</span>` + 
@@ -836,21 +860,15 @@ function buildFolderUI() {
                     chat.element.find(".recentChatInfo").append($tagsPreview).append($notePreview);
                     chat.element.append($chatImage);
 
-                    const $actionsMenuBtn = $(`
-                        <div class="co-actions-menu-btn" title="Действия">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
-                        </div>
-                    `);
+                    if (!isMobileMode) {
+                        const $actionsMenuBtn = $(`
+                            <div class="co-actions-menu-btn" title="Действия">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </div>
+                        `);
 
-                    chat.element.append($actionsMenuBtn);
-                    
-                    $actionsMenuBtn.css({'touch-action': 'manipulation', 'cursor': 'pointer'});
-
-                    const mobileMode = extension_settings[extensionName].mobileMode ?? 'longpress';
-                    const isMobileDevice = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-                    if (!isMobileDevice || mobileMode === 'desktop') {
-                        // РЕЖИМ ПК
+                        chat.element.append($actionsMenuBtn);
+                        
                         $actionsMenuBtn.on('click', function(e) {
                             e.stopImmediatePropagation();
                             e.stopPropagation();
@@ -858,34 +876,6 @@ function buildFolderUI() {
                             showContextMenu($wrapper, chat);
                         });
                         $actionsMenuBtn.on('touchstart pointerdown', function(e) {
-                            e.stopPropagation(); // Изолируем от тачскринов
-                        });
-                    } else if (mobileMode === 'longpress') {
-                        // РЕЖИМ ТЕЛЕФОН: Нативный долгий тап (contextmenu)
-                        $actionsMenuBtn.hide();
-                        chat.element.on('contextmenu', function(e) {
-                            e.preventDefault(); // Блокируем системное меню "Копировать/Поделиться"
-                            e.stopPropagation();
-                            showContextMenu($wrapper, chat);
-                            if (navigator.vibrate) navigator.vibrate(50); // Легкий виброотклик
-                        });
-                    } else if (mobileMode === 'button') {
-                        // РЕЖИМ ТЕЛЕФОН: Кнопка
-                        $actionsMenuBtn.hide();
-                        const $mobileBtn = $('<div class="co-mobile-open-btn">⋯</div>');
-                        $wrapper.append($mobileBtn);
-                        
-                        // Используем pointerdown, он срабатывает мгновенно до всяких кликов
-                        $mobileBtn.on('pointerdown', function(e) {
-                            e.stopImmediatePropagation();
-                            e.stopPropagation();
-                            e.preventDefault();
-                            showContextMenu($wrapper, chat);
-                        });
-                        
-                        // Глушим обычный клик, чтобы не было двойных срабатываний
-                        $mobileBtn.on('click', function(e) {
-                            e.preventDefault();
                             e.stopPropagation();
                         });
                     }
