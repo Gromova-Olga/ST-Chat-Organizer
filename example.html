@@ -5,7 +5,6 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-
             <div style="margin-bottom: 8px;">
                 <input id="co_enabled" type="checkbox" />
                 <label for="co_enabled">Включить Chat Organizer</label>
@@ -52,13 +51,49 @@
             </div>
 
             <div style="height: 1px; background: var(--SmartThemeBorderColor); opacity: 0.4; margin: 8px 0;"></div>
+            
             <div style="margin-bottom: 6px; font-size: 0.85em; opacity: 0.8;">💾 Резервное копирование:</div>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
                 <input id="co_export" class="menu_button" type="button" value="Экспорт" style="flex: 1;" />
                 <label for="co_import_file" class="menu_button" style="flex: 1; cursor: pointer; text-align: center; margin: 0; line-height: 28px;">Импорт</label>
                 <input id="co_import_file" type="file" accept=".json" style="display: none;" />
             </div>
 
+            <div style="height: 1px; background: var(--SmartThemeBorderColor); opacity: 0.4; margin: 12px 0;"></div>
+
+            <!-- НАСТРОЙКИ ГРАНИЦ ЧАТОВ -->
+            <div style="display: block; margin-top: 12px; padding: 12px; background: var(--white10a); border-radius: 8px;">
+                <div style="font-weight: bold; margin-bottom: 12px;">🖼 Настройки границ чатов</div>
+                
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <label style="min-width: 120px; font-size: 0.85em;">Радиус скругления:</label>
+                    <input type="range" id="co-chat-border-radius" min="0" max="20" value="8" style="flex: 1;">
+                    <span id="co-chat-border-radius-val" style="min-width: 45px; font-size: 0.85em;">8px</span>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <label style="min-width: 120px; font-size: 0.85em;">Толщина границы:</label>
+                    <input type="range" id="co-chat-border-width" min="0" max="4" step="0.5" value="0" style="flex: 1;">
+                    <span id="co-chat-border-width-val" style="min-width: 45px; font-size: 0.85em;">0px</span>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <label style="min-width: 120px; font-size: 0.85em;">Цвет границы:</label>
+                    <input type="color" id="co-chat-border-color" value="#444444" style="width: 50px; height: 32px; cursor: pointer;">
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <label style="min-width: 120px; font-size: 0.85em;">Стиль границы:</label>
+                    <select id="co-chat-border-style" style="flex: 1; background: var(--black50a); border: 1px solid var(--SmartThemeBorderColor); border-radius: 6px; padding: 6px; color: var(--SmartThemeBodyColor);">
+                        <option value="solid">Сплошная</option>
+                        <option value="dashed">Пунктирная</option>
+                        <option value="dotted">Точечная</option>
+                        <option value="double">Двойная</option>
+                    </select>
+                </div>
+                
+                <small style="opacity: 0.6; font-size: 0.75em;">При толщине 0 граница скрыта</small>
+            </div>
         </div>
     </div>
 </div>
