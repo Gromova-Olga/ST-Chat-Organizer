@@ -317,15 +317,12 @@ function removeFolderUI() {
 
 function showContextMenu(chatElement, chatData, event) {
     if (event) {
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         event.preventDefault();
     }
     
-    const existingMenu = $(".co-actions-context-menu");
-    if (existingMenu.length) {
-        existingMenu.remove();
-        return;
-    }
+    // ВСЕГДА закрываем предыдущее меню и создаём новое (было багом)
+    $(".co-actions-context-menu").remove();
 
     const s = extension_settings[extensionName];
     const note = s.notes?.[chatData.dataFile] || "";
@@ -371,7 +368,8 @@ function showContextMenu(chatElement, chatData, event) {
             top: 'auto',
             transform: 'none',
             width: 'auto',
-            maxWidth: 'none'
+            maxWidth: 'none',
+            zIndex: '1000000'
         });
     } else {
         const btn = chatElement.find(".co-actions-menu-btn");
@@ -381,61 +379,25 @@ function showContextMenu(chatElement, chatData, event) {
                 position: 'fixed',
                 top: btnRect.top - 10,
                 right: window.innerWidth - btnRect.left + 10,
-                transform: 'translateY(-100%)'
+                transform: 'translateY(-100%)',
+                zIndex: '1000000'
             });
         }
     }
     
     menu.addClass("show");
 
+    // === Закрытие по клику вне меню ===
     const closeMenu = (e) => {
-        if ($(e.target).closest(".co-context-menu-item").length) {
-            return;
-        }
-        if ($(e.target).closest(".co-actions-menu-btn").length) {
-            return;
-        }
+        if ($(e.target).closest(".co-context-menu-item").length) return;
+        if ($(e.target).closest(".co-actions-menu-btn").length) return;
         menu.remove();
         $(document).off("click touchstart", closeMenu);
-        $(document).off("keydown", escapeHandler);
-    };
-    
-    const escapeHandler = (e) => {
-        if (e.key === 'Escape') {
-            menu.remove();
-            $(document).off("click touchstart", closeMenu);
-            $(document).off("keydown", escapeHandler);
-        }
     };
     
     setTimeout(() => {
         $(document).on("click touchstart", closeMenu);
-        $(document).on("keydown", escapeHandler);
-    }, 100);
-
-    menu.find("[data-action]").off("click touchstart").on("click touchstart", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const action = $(e.currentTarget).data("action");
-        
-        if (action === "rename") showEditDialog(chatElement, chatData, "rename", displayName);
-        else if (action === "tag") showEditDialog(chatElement, chatData, "tag", tagsStr);
-        else if (action === "note") showEditDialog(chatElement, chatData, "note", note);
-        else if (action === "pin") {
-            togglePin(chatData.dataFile);
-            buildFolderUI();
-        } else if (action === "native-rename") {
-            const target = chatData.element.find('.chat_edit, .edit_chat, .ch_edit, [title="Edit chat name"], .chatActions .fa-pen-to-square').first();
-            if (target.length) target.click();
-            else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку переименования", "Chat Organizer");
-        } else if (action === "delete") {
-            const target = chatData.element.find('.delete_chat, .chat_delete, .ch_del, [title="Delete chat"], .chatActions .fa-trash').first();
-            if (target.length) target.click();
-            else if (typeof toastr !== 'undefined') toastr.error("Не удалось найти кнопку удаления", "Chat Organizer");
-        }
-        menu.remove();
-        $(document).off("click touchstart", closeMenu);
-    });
+    }, 250); // увеличил задержку специально для мобильных
 }
 
 function showEditDialog(chatElement, chatData, type, currentValue) {
@@ -852,20 +814,23 @@ function buildFolderUI() {
                     `);
 
                     chat.element.append($actionsMenuBtn);
-                    
+
                     $actionsMenuBtn.css({
                         'touch-action': 'manipulation',
-                        'cursor': 'pointer'
+                        'cursor': 'pointer',
+                        '-webkit-tap-highlight-color': 'transparent'
                     });
-                    
+
+// Только click — работает и на ПК, и на телефоне
                     const showMenuHandler = (e) => {
+                        e.stopImmediatePropagation();
                         e.stopPropagation();
                         e.preventDefault();
                         showContextMenu($wrapper, chat, e);
                         return false;
                     };
-                    
-                    $actionsMenuBtn.on("click touchstart", showMenuHandler);
+
+                    $actionsMenuBtn.on("click", showMenuHandler);
 
                     $wrapper.on("dragstart", function(e) {
                         if (sortMode !== 'custom') return e.preventDefault(); 
